@@ -1,0 +1,420 @@
+// ===================================================================================================================
+
+#ifdef MM_HEADER
+#attribute Material.Author = "QP4B"
+#attribute Material.Name = "CommonTransmission"
+#attribute Material.ShadingModel = "Transmission"
+
+// ==========================================================
+
+#stylesheet
+# Base Layer
+- _BaseMap
+- _BaseColor
+
+# Normal Layer
+- _NormalMap
+- _NormalScale
+
+# PBR Layer
+- _MaskMap @Tooltip(R: Metallic, G: Occlusion, B: Heightmap, A: Roughness)
+- _Metallic
+- _Occlusion
+- _Roughness
+
+# Emissive Layer
+- _EmissiveMap
+- _EmissiveColor
+
+# Transmission Layer
+- _Weight
+- _TransmissionColorMap
+- _TransmissionColor
+- _MFPScale
+- _ThicknessMap
+- _Thickness
+- _PhaseAniso
+
+#endstylesheet
+
+// ==========================================================
+
+#properties
+// Base Layer
+[NoScaleOffset] _BaseMap ("Base Map", 2D) = "white" {}
+[HDR] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
+[NoScaleOffset] [Normal] _NormalMap ("Normal Map", 2D) = "bump" {} // Tangent Space NormalMap
+_NormalScale ("Normal Scale", Range(0, 2)) = 1
+
+// PBR Layer
+[NoScaleOffset] _MaskMap ("MaskMap", 2D) = "white" {} // R Metallic, G Occlusion, B Curvature, A Roughness
+_Metallic ("Metallic", Range(0, 1)) = 0
+_Occlusion ("Occlusion", Range(0, 1)) = 1
+_Roughness ("Roughness", Range(0, 1)) = 0.75
+
+// Emissive Layer
+[NoScaleOffset] _EmissiveMap ("Emissive Map", 2D) = "white" {}
+[HDR] _EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
+
+// Transmission Layer
+_Weight ("TransmissionWeight", Range(0, 1)) = 1
+[NoScaleOffset] _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
+_TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
+_MFPScale ("MFP Scale", Range(0.1, 100)) = 1
+[NoScaleOffset] _ThicknessMap ("Thickness Map", 2D) = "white" {}
+_Thickness ("Thickness", Range(0, 100)) = 1
+_PhaseAniso ("PhaseAniso", Range(-1, 1)) = 0
+
+#endproperties
+
+// ===================================================================================================================
+
+#materialoption.ThinWalled 	              = Enable
+#materialoption.ShadowTerminator 		  = Enable
+#materialoption.TangentSpaceNormalMap     = Enable
+#materialoption.PixelDepthOffset          = Disable
+
+#materialoption.PerObjectShadow           = Enable
+#materialoption.CustomizeVertexOutputData = Enable
+
+#materialoption.UseSlab                   = Enable
+
+// ===================================================================================================================
+
+#else
+#include "./MM_CommonTransmission.Header.hlsl"
+#endif
+
+#include "Packages/com.funplus.xrender/Shaders/Library/Common.hlsl"
+#include "Packages/com.funplus.xrender/Shaders/Library/CommonHeader.hlsl"
+#include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
+#include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
+#include "Packages/com.funplus.xrender/Shaders/Library/CommonLighting.hlsl"
+
+// ===================================================================================================================
+// for vs
+
+float4 _EllipsoidCenter;
+float4 _EllipsoidRadius;
+float4x4 _EllipsoidRotation; 
+
+float4 PrepareMaterialVertexCustomOutputData(in FVertexOutput VertexOut, in FVertexInput VertexIn, float3 OffsetOS, float3 OffsetWS)
+{
+	float Thickness = 1.0;
+	// return float4(Thickness, 0.0, 0.0, 0.0);
+	
+	float3 RayDir = GetMainLightDirection();
+	
+	float3 Center = _EllipsoidCenter.xyz;
+	float3 Radius = _EllipsoidRadius.xyz;
+	float4x4 Rotation = _EllipsoidRotation;
+	
+	float3 ro = VertexOut.PositionWS - Center;
+	ro = mul(Rotation, float4(ro, 0));
+	float3 rd = mul(Rotation, float4(RayDir, 0));
+	float3 ra = Radius;
+
+	float3 ocn = ro / ra;
+	float3 rdn = normalize(rd / ra);
+	float a = dot(rdn, rdn);
+	float b = dot(ocn, rdn);
+	float c = dot(ocn, ocn);
+	float h = b * b - a * (c - 1.0);
+	if(h > 0.0)	// make sure that ellipsoid contain the object fully, otherwise there is error
+	{
+		h = sqrt(h);
+		Thickness = (-b + h) / a;
+		// Thickness = clamp(Thickness, 0, 1.0);
+	}
+    Thickness *= ra;	// world space thickness
+	
+	return float4(Thickness, 0.0, 0.0, 0.0);
+}
+
+//#materialoption.CustomizeVertexOutput
+void PrepareMaterialVertexCustomOutput(inout FVertexOutput VertexOut, in FVertexInput VertexIn)
+{
+}
+
+//#materialoption.VertexAnimationObjectSpace
+float3 CalculateVertexOffsetObjectSpace(in FVertexInput VertIn)
+{
+	return float3(0.0, 0.0, 0.0);
+}
+
+//#materialoption.VertexAnimationWorldSpace
+float3 CalculateVertexOffsetWorldSpace(in FVertexInput VertIn)
+{
+	return float3(0.0, 0.0, 0.0);
+}
+
+// ===================================================================================================================
+// for ps
+
+void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
+{
+    float2 BaseMapUV = PixelIn.UV0;
+    float4 BaseMap = SAMPLE_TEXTURE2D(_BaseMap, SamplerLinearRepeat, BaseMapUV);
+    float4 MaskMap = SAMPLE_TEXTURE2D(_MaskMap, SamplerLinearRepeat, BaseMapUV);
+
+    float4 BaseColor = BaseMap * _BaseColor;
+    MInput.Base.Color = BaseColor.rgb;
+    MInput.Base.Opacity = BaseColor.a;
+    MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(MaskMap) * _Metallic;
+    MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(MaskMap) * _Roughness;
+	
+    MInput.AO.AmbientOcclusion = LerpWhiteTo(GetMaterialAOFromMaskMap(MaskMap), _Occlusion);
+
+    float4 NormalMap = SAMPLE_TEXTURE2D(_NormalMap, SamplerLinearRepeat, BaseMapUV);
+    MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(NormalMap, _NormalScale);
+
+    MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
+
+    MInput.Transmission.Weight = _Weight;
+    
+    float3 TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * _TransmissionColor.rgb;
+    MInput.Transmission.SSSMFP = TransmittanceToMeanFreePath(TransmittanceColor, VOLUME_DEFAULT_THICKNESS_M);
+    MInput.Transmission.SSSMFPScale = _MFPScale;
+    MInput.Transmission.Thickness = SAMPLE_TEXTURE2D(_ThicknessMap, SamplerLinearRepeat, BaseMapUV).r * _Thickness;
+    MInput.Transmission.SSSPhaseAniso = _PhaseAniso;
+
+    #if defined(USE_VERTEX_ATTR_CUSTOM_OUTPUT_DATA)
+    // SSSMFPScale is a material params, it means color(1, 1, 1) trans through cur mat by this thick will turn to transmittance_color
+    // so this place no need multi really object's thickness to SSSMFPScale
+    // // todo, thickness may get from thickness map, this situation must transform from [0, 1] to world space thickness
+    MInput.Transmission.Thickness *= PixelIn.CustomVertexData.r;
+    #endif
+
+}
+
+// ===================================================================================================================
+
+/*
+Support Option List:
+	#materialoption.TangentSpaceNormalMap
+	#materialoption.TangentMap
+	#materialoption.CustomNormal
+	#materialoption.CustomTBN
+	#materialoption.Reflectance
+	#materialoption.Anisotropic
+	#materialoption.Matcap
+	#materialoption.Clearcoat
+	#materialoption.Emissive
+	#materialoption.Fuzz
+	#materialoption.Height
+	#materialoption.SubsurfaceScattering
+	#materialoption.ThinFilm
+	#materialoption.Transmission
+	#materialoption.VertexAnimationObjectSpace
+	#materialoption.VertexAnimationWorldSpace
+	#materialoption.AmbientOcclusion
+	#materialoption.VertexAmbientOcclusion
+	#materialoption.UseUV1
+	#materialoption.UseUV2
+	#materialoption.UseUV3
+	#materialoption.CustomData
+	#materialoption.CustomDataLite
+	#materialoption.CustomizeVertexOutput
+	#materialoption.CustomizeVertexOutputData
+*/
+
+// Capsule Proxy Thickness
+
+// StructuredBuffer<float4> _CapsuleBuffer;
+// uint _ThicknessCapsuleCount;
+//#materialoption.CustomizeVertexOutputData
+// float4 PrepareMaterialVertexCustomOutputData(in FVertexOutput VertexOut, in FVertexInput VertexIn, float3 OffsetOS, float3 OffsetWS)
+// {
+// 	float thickness = 0;
+// 	float SumThickness = 0;
+// 	float SumWeight = 0;
+// 	float3 ro = VertexOut.PositionWS;
+// 	float3 rd = -normalize(_Forward.xyz);
+//
+// 	int Index = -1;
+// 	for(int i = 0; i < _ThicknessCapsuleCount; ++i)
+// 	{
+// 		float Weight = 0;
+// 		if(CapsuleInvolve(i, ro, Weight))
+// 		{
+// 			// Index = i;
+// 			// break;	// calculate once only
+// 			SumWeight += Weight;
+//
+// 			float3 pa = _CapsuleBuffer[i * 2].xyz;	// Transform Local Position to World Position in C# script 
+// 			float3 pb = _CapsuleBuffer[i * 2 + 1].xyz;
+// 			float ra = _CapsuleBuffer[i * 2].a;
+//
+// 			// Intersect
+// 			float3  ba = pb - pa;
+// 			float3  oa = ro - pa;
+// 			float3  ob = ro - pb;
+// 			float baba = dot(ba,ba);
+// 			float bard = dot(ba,rd);
+// 			float baoa = dot(ba,oa);
+// 			float rdoa = dot(rd,oa);
+// 			float oaoa = dot(oa,oa);
+// 			float a = baba      - bard*bard;
+// 			float b = baba*rdoa - baoa*bard;
+// 			float c = baba*oaoa - baoa*baoa - ra*ra*baba;
+// 			float delta = b*b - a*c;
+//                 
+// 			float BodyT2 = (-b+sqrt(delta))/a;
+// 			float y2 = baoa + BodyT2*bard;
+//
+// 			// hit body
+// 			if(y2 > 0.0 && y2 < baba)
+// 			{
+// 				SumThickness += BodyT2 * Weight;
+// 				// thickness = max(thickness, BodyT2);
+// 			}
+// 			// hit caps
+// 			else
+// 			{
+// 				float3 oc = y2 <= 0.0 ? oa : ob;
+// 				b = dot(rd,oc);
+// 				c = dot(oc,oc) - ra*ra;
+// 				delta = b*b - c;
+// 				delta = sqrt(delta);
+// 				// thickness = max(thickness, -b + delta);
+// 				SumThickness += (-b + delta) * Weight;
+// 			}
+// 		}
+// 	}
+
+	// if(Index == -1)
+	// {
+	// 	return float4(0.0, 0.0, 0.0, 0.0); 
+	// }
+	
+	// float3 pa = _CapsuleBuffer[Index * 2].xyz;	// Transform Local Position to World Position in C# script 
+	// float3 pb = _CapsuleBuffer[Index * 2 + 1].xyz;
+	// float ra = _CapsuleBuffer[Index * 2].a;
+	//
+	// // Intersect
+	// float3  ba = pb - pa;
+	// float3  oa = ro - pa;
+	// float3  ob = ro - pb;
+	// float baba = dot(ba,ba);
+	// float bard = dot(ba,rd);
+	// float baoa = dot(ba,oa);
+	// float rdoa = dot(rd,oa);
+	// float oaoa = dot(oa,oa);
+	// float a = baba      - bard*bard;
+	// float b = baba*rdoa - baoa*bard;
+	// float c = baba*oaoa - baoa*baoa - ra*ra*baba;
+	// float delta = b*b - a*c;
+ 
+	// float BodyT2 = (-b+sqrt(delta))/a;
+	// float y2 = baoa + BodyT2*bard;
+	//
+	// // hit body
+	// if(y2 > 0.0 && y2 < baba)
+	// {
+	// 	thickness = BodyT2;
+	// }
+	// // hit caps
+	// else
+	// {
+	// 	float3 oc = y2 <= 0.0 ? oa : ob;
+	// 	b = dot(rd,oc);
+	// 	c = dot(oc,oc) - ra*ra;
+	// 	delta = b*b - c;
+	// 	delta = sqrt(delta);
+	// 	thickness = -b + delta;
+	// }
+	// thickness = IsNaN(thickness) ? 1.0 : thickness;
+// 	return float4(SumThickness / SumWeight * 0.95, 0.0, 0.0, 0.0);
+// 	return float4(thickness, 0.0, 0.0, 0.0);
+// }
+
+
+// bool CapsuleInvolve(int Index, float3 PositionWS, out float Weight)
+// {
+// 	float4 PosAR = _CapsuleBuffer[Index * 2];
+// 	float4 PosBL = _CapsuleBuffer[Index * 2 + 1];
+// 	float Radius = PosAR.w;
+// 	Weight = 0;
+//
+// 	float3 AO = PositionWS - PosAR.xyz;
+// 	float3 AB = PosBL.xyz - PosAR.xyz;
+// 	float3 BO = PositionWS - PosBL.xyz;
+// 	float3 NormalizedAO = normalize(AO);
+// 	float3 NormalizedBO = normalize(BO);
+// 	float3 NormalizedAB = normalize(AB);
+// 	float CosOAB = dot(NormalizedAO, NormalizedAB);
+// 	float CosOBA = dot(NormalizedBO, -NormalizedAB);
+// 	
+// 	if(CosOAB <= 0)  // caps A
+// 		{
+// 		if(length(AO) < Radius)
+// 		{
+// 			Weight = 1.0 - length(AO) / Radius;
+// 			return true;
+// 		}
+// 		}
+// 	else if(CosOBA <= 0) // caps B
+// 		{
+// 		if(length(BO) < Radius)
+// 		{
+// 			Weight = 1.0 - length(BO) / Radius;
+// 			return true;
+// 		}
+// 		}
+// 	else // body
+// 		{
+// 		float3 ProjectedPoint = PosAR.xyz + NormalizedAB * CosOAB * length(AO);
+// 		if(length(ProjectedPoint - PositionWS) < Radius)
+// 		{
+// 			Weight = 1.0 - length(ProjectedPoint - PositionWS) / Radius;
+// 			return true;
+// 		}
+//
+// 		// float dist = length(AO) * sqrt(1 - CosOAB * CosOAB);
+// 		// if(dist < Radius)
+// 		// {
+// 		// 	return true;
+// 		// }
+// 		}
+//
+// 	return false;
+// }
+
+// Sphere Proxy Volume
+
+// StructuredBuffer<float4> _SphereBuffer;
+// uint _ThicknessSphereCount;
+
+//#materialoption.CustomizeVertexOutputData
+// float4 PrepareMaterialVertexCustomOutputData(in FVertexOutput VertexOut, in FVertexInput VertexIn, float3 OffsetOS, float3 OffsetWS)
+// {
+// 	float Thickness = 0;
+// 	float3 PositionWS = VertexOut.PositionWS;
+// 	float3 RayDir = normalize(_Forward.xyz);
+//
+// 	for(int i = 0; i < _ThicknessSphereCount; ++i)
+// 	{
+// 		float3 Center = _SphereBuffer[i * 2].xyz;
+// 		float Radius = _SphereBuffer[i * 2].w;
+// 		float3 Scale = _SphereBuffer[i * 2 + 1].xyz;
+// 		// float3 ScaledRayDir = normalize(RayDir / Scale);
+// 		float R2 = Radius * Radius;
+// 		
+// 		if(dot((PositionWS - Center), (PositionWS - Center)) >= R2)
+// 		{
+// 			continue;
+// 		}
+//
+// 		float OC = Center - PositionWS;
+// 		float B = dot(OC, RayDir);
+// 		float C = dot(OC, OC) - R2;
+// 		float Delta = B * B - C;
+// 		Thickness = -B + sqrt(Delta);
+// 		// Thickness = length(Thickness * ScaledRayDir * Scale);
+// 		break;
+// 	}
+//
+// 	return float4(Thickness, 0.0, 0.0, 0.0);
+// }
+
+
