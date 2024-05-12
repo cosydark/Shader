@@ -17,11 +17,6 @@
 - _AdditionalLayer_Roughness
 - _AdditionalLayer_Reflectance
 ###
-### Tiling Option
-- _AdditionalLayer_Tiling
-- _AdditionalLayer_MatchScaling @Drawer(Toggle)
-- _AdditionalLayer_UVIndex @Drawer(Enum, 0, 1)
-###
 ### Mask Filter
 - _AdditionalLayer_MaskContrast
 - _AdditionalLayer_MaskIntensity
@@ -39,9 +34,6 @@ _AdditionalLayer_AmbientOcclusion ("AmbientOcclusion", Range(0, 1)) = 1
 _AdditionalLayer_Height ("Height", Range(0, 1)) = 0.5
 _AdditionalLayer_Roughness ("Roughness", Range(0, 1)) = 0.5
 _AdditionalLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
-_AdditionalLayer_Tiling ("Tiling", Float) = 1
-_AdditionalLayer_MatchScaling ("Match Scaling", Int) = 0
-_AdditionalLayer_UVIndex ("UV Index", Int) = 0
 _AdditionalLayer_BlendMode ("Blend Mode", Float) = 1
 _AdditionalLayer_BlendRadius ("Blend Radius", Range(0.01, 0.5)) = 0.1
 _AdditionalLayer_MaskContrast ("Mask Contrast R", Float) = 1
@@ -60,7 +52,6 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     float4 BlendMask = MInput.PluginChannelData.Data0;
     BlendMask.b = saturate(pow(BlendMask.b, _AdditionalLayer_MaskContrast) * _AdditionalLayer_MaskIntensity);
     float LocalScaleX = MInput.PluginChannelData.Data1.x;
-    float2 AdditionalLayer_Coordinate = PrepareTextureCoordinates(_AdditionalLayer_UVIndex, PixelIn);
     BlendWithHeightNoTexture(   _AdditionalLayer_BaseColor,
                                 _AdditionalLayer_NormalScale,
                                 _AdditionalLayer_Metallic,
