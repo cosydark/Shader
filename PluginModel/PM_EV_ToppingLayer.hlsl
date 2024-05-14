@@ -19,7 +19,7 @@
 - _ToppingLayer_Reflectance
 - _ToppingLayer_HeightOffset
 ###
-### Toppping Option
+### Topping Option
 - _ToppingLayer_NormalIntensity
 - _ToppingLayer_Coverage
 - _ToppingLayer_Spread

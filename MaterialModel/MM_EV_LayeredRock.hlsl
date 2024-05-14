@@ -5,7 +5,7 @@
 
 #stylesheet
 
-# Mask Layer
+# Mask Layer @Hide(_CustomOption0 != 0)
 - _BlendMask @TryInline(0)
 - _UVIndex @Drawer(Enum, 0, 1)
 
