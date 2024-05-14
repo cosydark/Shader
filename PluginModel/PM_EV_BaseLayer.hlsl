@@ -13,9 +13,6 @@
 - _BaseLayer_DetailIntensity
 - _BaseLayer_DetailNormalScale
 - _BaseLayer_UVIndex @Drawer(Enum, 0, 1)
-###
-###
-- _BaseLayer_DebugMask @Drawer(Toggle)
 #endstylesheet
 
 #properties
@@ -23,7 +20,6 @@ _BaseLayer_DetailMap ("Detail Map", 2D) = "linearGrey" {}
 _BaseLayer_DetailIntensity ("Detail Scale", Range(0, 1)) = 1
 _BaseLayer_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
 _BaseLayer_UVIndex ("UV Index", Int) = 0
-_BaseLayer_DebugMask ("Debug Mask", Int) = 0
 #endproperties
 #endif
 
@@ -46,7 +42,6 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                                                                     MInput.TangentSpaceNormal.NormalTS);
     MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_DetailIntensity));
     MInput.Base.Color *=  lerp(1, AlbedoGrayscale, _BaseLayer_DetailIntensity);
-    MInput.Base.Color =  _BaseLayer_DebugMask < FLT_EPS ? MInput.Base.Color : MInput.PluginChannelData.Data0.b;
 }
 
 
