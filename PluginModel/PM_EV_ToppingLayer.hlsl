@@ -3,6 +3,7 @@
 #attribute Plugin.Name = "ToppingLayer"
 #attribute Plugin.Priority = 0
 #attribute Plugin.AlwaysEnable = False
+// #attribute Plugin.AlphaClip = False
 
 #pluginoption.UseUV1 = Enable
 #pluginfunction.PostProcessMaterialInput = Enable
@@ -39,7 +40,7 @@ _ToppingLayer_BaseMap ("BaseMap", 2D) = "white" {}
 _ToppingLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _ToppingLayer_NormalMap ("NormalMap", 2D) = "bump" {}
 _ToppingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
-_ToppingLayer_MaskMap ("MaskMap (MOHR)", 2D) = "grey" {}
+_ToppingLayer_MaskMap ("MaskMap", 2D) = "black" {}
 _ToppingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _ToppingLayer_HeightOffset ("Height Offset", Range(0, 1)) = 0.5
 _ToppingLayer_NormalIntensity ("Normal Intensity", Range(0, 1)) = 0.5
@@ -88,7 +89,7 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                         MInput.AO.AmbientOcclusion,
                         MInput.Detail.Height,
                         MInput.Base.Roughness,
-                        MInput.Specular.Reflectance
+                        MInput.Base.Roughness
                     );
     // Apply Topping Layer
 }
