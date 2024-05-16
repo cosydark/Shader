@@ -50,7 +50,7 @@ _ToppingLayer_Tiling ("Tiling", Float) = 1
 _ToppingLayer_MatchScaling ("Match Scaling", Int) = 0
 _ToppingLayer_UVIndex ("UV Index", Int) = 0
 _ToppingLayer_BlendMode ("Blend Mode", Float) = 1
-_ToppingLayer_BlendRadius ("Blend Radius", Range(0.01, 0.5)) = 0.1
+_ToppingLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 #endproperties
 #endif
 
