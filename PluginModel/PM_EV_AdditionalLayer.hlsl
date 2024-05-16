@@ -35,7 +35,7 @@ _AdditionalLayer_Height ("Height", Range(0, 1)) = 0.5
 _AdditionalLayer_Roughness ("Roughness", Range(0, 1)) = 0.5
 _AdditionalLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _AdditionalLayer_BlendMode ("Blend Mode", Float) = 1
-_AdditionalLayer_BlendRadius ("Blend Radius", Range(0.01, 0.5)) = 0.1
+_AdditionalLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _AdditionalLayer_MaskContrast ("Mask Contrast R", Float) = 1
 _AdditionalLayer_MaskIntensity ("Mask Intensity R", Float) = 1
 #endproperties
