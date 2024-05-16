@@ -43,7 +43,7 @@ _TilingLayer_G_Tiling ("Tiling", Float) = 1
 _TilingLayer_G_MatchScaling ("Match Scaling", Int) = 0
 _TilingLayer_G_UVIndex ("UV Index", Int) = 0
 _TilingLayer_G_BlendMode ("Blend Mode", Float) = 1
-_TilingLayer_G_BlendRadius ("Blend Radius", Range(0.01, 0.5)) = 0.1
+_TilingLayer_G_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _TilingLayer_G_MaskContrast ("Mask Contrast R", Float) = 1
 _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 #endproperties
