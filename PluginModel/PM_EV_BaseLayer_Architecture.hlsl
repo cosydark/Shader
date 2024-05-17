@@ -34,14 +34,14 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     float2 BaseCoordinate = PrepareTextureCoordinates(_BaseLayer_Architecture_UVIndex, PixelIn);
     // float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_Architecture_NormalScale);
     float4 DetailMap = SAMPLE_TEXTURE2D(_BaseLayer_Architecture_DetailMap, SamplerLinearRepeat, BaseCoordinate);
-    float AlbedoGrayscale = DetailMap.r;
+    float Roughness = DetailMap.r;
     float AmbientOcclusion = DetailMap.b;
     float3 DetailNormalTS = GetNormalTSFromDetailMap(DetailMap, _BaseLayer_Architecture_DetailIntensity * _BaseLayer_Architecture_DetailNormalScale);
     
     MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(    DetailNormalTS,
                                                                     MInput.TangentSpaceNormal.NormalTS);
     MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_Architecture_DetailIntensity));
-    MInput.Base.Color *=  lerp(1, AlbedoGrayscale, _BaseLayer_Architecture_DetailIntensity);
+    MInput.Base.Roughness *=  lerp(1, Roughness, _BaseLayer_Architecture_DetailIntensity);
 }
 
 
