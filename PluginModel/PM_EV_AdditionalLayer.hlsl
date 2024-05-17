@@ -27,7 +27,7 @@
 #endstylesheet
 
 #properties
-_AdditionalLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
+[HDR] _AdditionalLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _AdditionalLayer_NormalScale ("Normal Scale", Range(0, 1)) = 0.5
 _AdditionalLayer_Metallic ("Metallic", Range(0, 1)) = 0
 _AdditionalLayer_AmbientOcclusion ("AmbientOcclusion", Range(0, 1)) = 1
@@ -69,6 +69,7 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                                 MInput.Base.Roughness,
                                 MInput.Specular.Reflectance
                             );
+    MInput.Base.Color = saturate(MInput.Base.Color);// Make BaseColor Physical
 }
 
 

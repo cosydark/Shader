@@ -118,8 +118,15 @@ void BlendWithHeightNoTexture(	float4 Color_Attribute,
         HeightBlendMask = IntensityMask;
         break;
     }
-    // Color = HeightBlendMask;
-    Color = lerp(Color, BaseMapBlend, HeightBlendMask);
+    // Color = lerp(Color, BaseMapBlend, HeightBlendMask);
+    // NormalTS = lerp(NormalTS, NormalBlend, HeightBlendMask);
+    // Reflectance = lerp(Reflectance, Reflectance_Attribute, HeightBlendMask);
+    // Metallic = lerp(Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), HeightBlendMask);
+    // AmbientOcclusion = lerp(AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
+    // Height = lerp(Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
+    // Roughness = lerp(Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
+    
+    Color = lerp(Color, Color * BaseMapBlend, HeightBlendMask);
     NormalTS = lerp(NormalTS, NormalBlend, HeightBlendMask);
     Reflectance = lerp(Reflectance, Reflectance_Attribute, HeightBlendMask);
     Metallic = lerp(Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), HeightBlendMask);
@@ -133,10 +140,9 @@ void ApplyDetailMap(    Texture2D<float4> DetailMap,
                         float DetailNormalScale,
                         float2 Coordinate,
                         float IntensityMask,
-                        inout float3 Color,
+                        inout float Roughness,
                         inout float3 NormalTS,
-                        inout float AmbientOcclusion,
-                        bool HexTilling
+                        inout float AmbientOcclusion
                     )
 {
     DetailIntensity = DetailIntensity * IntensityMask;
@@ -145,14 +151,14 @@ void ApplyDetailMap(    Texture2D<float4> DetailMap,
     // Apply Detail Map
     NormalTS = BlendAngelCorrectedNormals(NormalTS, DetailNormalTS);
     AmbientOcclusion = min(AmbientOcclusion, lerp(1, GetAOFromDetailMap(Detail), DetailIntensity));
-    Color *= lerp(1, GetAlbedoGrayScaleFromDetailMap(Detail), DetailIntensity);
+    Roughness *= lerp(1, Detail.r, DetailIntensity);
 }
 void ApplyDetailMapHex(     Texture2D<float4> DetailMap,
                             float DetailIntensity,
                             float DetailNormalScale,
                             float2 Coordinate,
                             float IntensityMask,
-                            inout float3 Color,
+                            inout float Roughness,
                             inout float3 NormalTS,
                             inout float AmbientOcclusion,
                             float4 HexInfo
@@ -171,7 +177,7 @@ void ApplyDetailMapHex(     Texture2D<float4> DetailMap,
     // Apply Detail Map
     NormalTS = BlendAngelCorrectedNormals(NormalTS, DetailNormalTS);
     AmbientOcclusion = min(AmbientOcclusion, lerp(1, GetAOFromDetailMap(Detail), DetailIntensity));
-    Color *= lerp(1, GetAlbedoGrayScaleFromDetailMap(Detail), DetailIntensity);
+    Roughness *= lerp(1, Detail.r, DetailIntensity);
 }
 void SetupTilingLayer(    Texture2D<float4> BaseMap,
                         float3 BaseColor,

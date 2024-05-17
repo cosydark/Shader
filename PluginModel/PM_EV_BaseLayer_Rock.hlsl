@@ -35,7 +35,7 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
 {
     float2 BaseCoordinate = PrepareTextureCoordinates(_BaseLayer_Rock_UVIndex, PixelIn);
     float4 DetailMap = SAMPLE_TEXTURE2D(_BaseLayer_Rock_DetailMap, SamplerLinearRepeat, BaseCoordinate);
-    float AlbedoGrayscale = DetailMap.r;
+    float Roughness = DetailMap.r;
     float AmbientOcclusion = DetailMap.b;
     float3 DetailNormalTS = GetNormalTSFromDetailMap(DetailMap, _BaseLayer_Rock_DetailIntensity * _BaseLayer_Rock_DetailNormalScale);
     
@@ -43,7 +43,7 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                                                                     MInput.TangentSpaceNormal.NormalTS);
     MInput.PluginChannelData.Data0.xyz = DetailNormalTS;
     MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_Rock_DetailIntensity));
-    MInput.Base.Color *=  lerp(1, AlbedoGrayscale, _BaseLayer_Rock_DetailIntensity);
+    MInput.Base.Roughness *=  lerp(1, Roughness, _BaseLayer_Rock_DetailIntensity);
 }
 
 

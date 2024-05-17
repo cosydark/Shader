@@ -58,7 +58,7 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                         _DetailLayer_DetailNormalScale,
                         DetailCoordinate,
                         _DetailLayer_DetailIntensity * BlendMask.a,
-                        MInput.Base.Color,
+                        MInput.Base.Roughness,
                         MInput.TangentSpaceNormal.NormalTS,
                         MInput.AO.AmbientOcclusion,
                         _DetailLayer_HexTilingInfo
