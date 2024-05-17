@@ -9,16 +9,16 @@
 
 #stylesheet
 # Base
-- _BaseLayer_Rock_DetailMap @TryInline(1)
-- _BaseLayer_Rock_DetailIntensity
-- _BaseLayer_Rock_DetailNormalScale
+- _BaseLayer_Rock_NormalMap @TryInline(1)
+- _BaseLayer_Rock_NormalScale
+- _BaseLayer_Rock_MaskMap @TryInline(0)
 - _BaseLayer_Rock_UVIndex @Drawer(Enum, 0, 1)
 #endstylesheet
 
 #properties
-_BaseLayer_Rock_DetailMap ("Detail Map", 2D) = "linearGrey" {}
-_BaseLayer_Rock_DetailIntensity ("Detail Scale", Range(0, 1)) = 1
-_BaseLayer_Rock_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
+_BaseLayer_Rock_NormalMap ("Normal Map", 2D) = "bump" {}
+_BaseLayer_Rock_NormalScale ("Normal Scale", Range(0, 1)) = 1
+_BaseLayer_Rock_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _BaseLayer_Rock_UVIndex ("UV Index", Int) = 0
 #endproperties
 #endif
@@ -34,16 +34,15 @@ _BaseLayer_Rock_UVIndex ("UV Index", Int) = 0
 void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
     float2 BaseCoordinate = PrepareTextureCoordinates(_BaseLayer_Rock_UVIndex, PixelIn);
-    float4 DetailMap = SAMPLE_TEXTURE2D(_BaseLayer_Rock_DetailMap, SamplerLinearRepeat, BaseCoordinate);
-    float Roughness = DetailMap.r;
-    float AmbientOcclusion = DetailMap.b;
-    float3 DetailNormalTS = GetNormalTSFromDetailMap(DetailMap, _BaseLayer_Rock_DetailIntensity * _BaseLayer_Rock_DetailNormalScale);
+    float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_Rock_MaskMap, SamplerLinearRepeat, BaseCoordinate);
+    float4 NormalMap = SAMPLE_TEXTURE2D(_BaseLayer_Rock_NormalMap, SamplerLinearRepeat, BaseCoordinate);
+    float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_Rock_NormalScale);
     
-    MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(    DetailNormalTS,
-                                                                    MInput.TangentSpaceNormal.NormalTS);
-    MInput.PluginChannelData.Data0.xyz = DetailNormalTS;
-    MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_Rock_DetailIntensity));
-    MInput.Base.Roughness *=  lerp(1, Roughness, _BaseLayer_Rock_DetailIntensity);
+    MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
+    MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
+    MInput.Base.Roughness *= GetPerceptualRoughnessFromMaskMap(MaskMap);
+
+    MInput.PluginChannelData.Data0.xyz = NormalTS;// Prepare Data For Topping Layer
 }
 
 

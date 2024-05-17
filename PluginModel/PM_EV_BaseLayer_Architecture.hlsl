@@ -9,21 +9,20 @@
 
 #stylesheet
 # Base
-- _BaseLayer_Architecture_DetailMap @TryInline(1)
-- _BaseLayer_Architecture_DetailIntensity
-- _BaseLayer_Architecture_DetailNormalScale
+- _BaseLayer_Architecture_NormalMap @TryInline(1)
+- _BaseLayer_Architecture_NormalScale
+- _BaseLayer_Architecture_MaskMap @TryInline(0)
 - _BaseLayer_Architecture_UVIndex @Drawer(Enum, 0, 1)
 #endstylesheet
 
 #properties
-_BaseLayer_Architecture_DetailMap ("Detail Map", 2D) = "linearGrey" {}
-_BaseLayer_Architecture_DetailIntensity ("Detail Scale", Range(0, 1)) = 1
-_BaseLayer_Architecture_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
+_BaseLayer_Architecture_NormalMap ("Normal Map", 2D) = "bump" {}
+_BaseLayer_Architecture_NormalScale ("Normal Scale", Range(0, 1)) = 1
+_BaseLayer_Architecture_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _BaseLayer_Architecture_UVIndex ("UV Index", Int) = 0
 #endproperties
 #endif
 
-#include "Packages/com.funplus.xrender/Shaders/Library/Common.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonHeader.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
@@ -32,16 +31,12 @@ _BaseLayer_Architecture_UVIndex ("UV Index", Int) = 0
 void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
     float2 BaseCoordinate = PrepareTextureCoordinates(_BaseLayer_Architecture_UVIndex, PixelIn);
-    // float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_Architecture_NormalScale);
-    float4 DetailMap = SAMPLE_TEXTURE2D(_BaseLayer_Architecture_DetailMap, SamplerLinearRepeat, BaseCoordinate);
-    float Roughness = DetailMap.r;
-    float AmbientOcclusion = DetailMap.b;
-    float3 DetailNormalTS = GetNormalTSFromDetailMap(DetailMap, _BaseLayer_Architecture_DetailIntensity * _BaseLayer_Architecture_DetailNormalScale);
+    float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_Architecture_MaskMap, SamplerLinearRepeat, BaseCoordinate);
+    float4 NormalMap = SAMPLE_TEXTURE2D(_BaseLayer_Architecture_NormalMap, SamplerLinearRepeat, BaseCoordinate);
+    float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_Architecture_NormalScale);
     
-    MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(    DetailNormalTS,
-                                                                    MInput.TangentSpaceNormal.NormalTS);
-    MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_Architecture_DetailIntensity));
-    MInput.Base.Roughness *=  lerp(1, Roughness, _BaseLayer_Architecture_DetailIntensity);
+    MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
+    MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
 }
 
 

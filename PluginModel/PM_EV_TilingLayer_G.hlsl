@@ -32,11 +32,11 @@
 #endstylesheet
 
 #properties
-_TilingLayer_G_BaseMap ("BaseMap", 2D) = "white" {}
+_TilingLayer_G_BaseMap ("Base Map", 2D) = "white" {}
 _TilingLayer_G_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-_TilingLayer_G_NormalMap ("NormalMap", 2D) = "bump" {}
+_TilingLayer_G_NormalMap ("Normal Map", 2D) = "bump" {}
 _TilingLayer_G_NormalScale ("Normal Scale", Range(0, 2)) = 1
-_TilingLayer_G_MaskMap ("MaskMap", 2D) = "black" {}
+_TilingLayer_G_MaskMap ("Mask Map (MOHR)", 2D) = "black" {}
 _TilingLayer_G_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_G_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_G_Tiling ("Tiling", Float) = 1

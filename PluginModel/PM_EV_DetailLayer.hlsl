@@ -10,7 +10,7 @@
 
 #stylesheet
 
-# Detail (A)
+# Detail
 - _DetailLayer_DetailMap @TryInline(1)
 - _DetailLayer_DetailIntensity
 - _DetailLayer_DetailNormalScale
@@ -20,22 +20,16 @@
 - _DetailLayer_MatchScaling_Detail @Drawer(Toggle)
 - _DetailLayer_UVIndex_Detail @Drawer(Enum, 0, 1)
 - _DetailLayer_HexTilingInfo
-###
-### Mask Filter
-- _DetailLayer_MaskContrast_Detail
-- _DetailLayer_MaskIntensity_Detail
 
 #endstylesheet
 
 #properties
 _DetailLayer_DetailIntensity ("Detail Intensity", Range(0, 1)) = 1
-_DetailLayer_DetailMap ("Detail Map", 2D) = "bump" {}
+_DetailLayer_DetailMap ("Detail Map", 2D) = "linearGrey" {}
 _DetailLayer_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
 _DetailLayer_Tiling_Detail ("Tiling Detail", Float) = 1
 _DetailLayer_MatchScaling_Detail ("Match Scaling Detail", Int) = 0
 _DetailLayer_UVIndex_Detail ("UV Index", Int) = 0
-_DetailLayer_MaskContrast_Detail ("Mask Contrast R", Float) = 1
-_DetailLayer_MaskIntensity_Detail ("Mask Intensity R", Float) = 1
 _DetailLayer_HexTilingInfo ("Hex Tiling Info", Vector) = (-0.5, 0.456, 10, 0.2)
 #endproperties
 #endif
@@ -48,7 +42,6 @@ _DetailLayer_HexTilingInfo ("Hex Tiling Info", Vector) = (-0.5, 0.456, 10, 0.2)
 
 void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
-    float4 BlendMask = MInput.PluginChannelData.Data0;
     float LocalScaleX = MInput.PluginChannelData.Data1.x;
     float2 DetailCoordinate = PrepareTextureCoordinates(_DetailLayer_UVIndex_Detail, PixelIn);
     DetailCoordinate = DetailCoordinate * _DetailLayer_Tiling_Detail * (_DetailLayer_MatchScaling_Detail > FLT_EPS ? LocalScaleX : 1);
@@ -57,7 +50,7 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                         _DetailLayer_DetailIntensity,
                         _DetailLayer_DetailNormalScale,
                         DetailCoordinate,
-                        _DetailLayer_DetailIntensity * BlendMask.a,
+                        _DetailLayer_DetailIntensity,
                         MInput.Base.Roughness,
                         MInput.TangentSpaceNormal.NormalTS,
                         MInput.AO.AmbientOcclusion,

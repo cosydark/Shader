@@ -36,11 +36,11 @@
 #endstylesheet
 
 #properties
-_ToppingLayer_BaseMap ("BaseMap", 2D) = "white" {}
+_ToppingLayer_BaseMap ("Base Map", 2D) = "white" {}
 _ToppingLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-_ToppingLayer_NormalMap ("NormalMap", 2D) = "bump" {}
+_ToppingLayer_NormalMap ("Normal Map", 2D) = "bump" {}
 _ToppingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
-_ToppingLayer_MaskMap ("MaskMap", 2D) = "black" {}
+_ToppingLayer_MaskMap ("Mask Map (MOHR)", 2D) = "black" {}
 _ToppingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _ToppingLayer_HeightOffset ("Height Offset", Range(0, 1)) = 0.5
 _ToppingLayer_NormalIntensity ("Normal Intensity", Range(0, 1)) = 0.5
