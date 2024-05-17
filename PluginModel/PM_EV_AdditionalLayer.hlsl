@@ -22,7 +22,7 @@
 - _AdditionalLayer_MaskIntensity
 ###
 ### Blend Option
-- _AdditionalLayer_BlendMode  @Drawer(Enum, Lerp, Height Max\, Height Min)
+- _AdditionalLayer_BlendMode  @Drawer(Enum, Lerp, Height Max, Height Min)
 - _AdditionalLayer_BlendRadius
 #endstylesheet
 
