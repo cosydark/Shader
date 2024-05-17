@@ -43,7 +43,7 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
             new PluginModelDesc {name = "TilingLayer_R", needMultiCompile = true},
             new PluginModelDesc {name = "TilingLayer_G", needMultiCompile = true},
             // Blend Base Layer
-            new PluginModelDesc {name = "BaseLayer", needMultiCompile = false, displayPriority = -1},
+            new PluginModelDesc {name = "BaseLayer_Architecture", needMultiCompile = false, displayPriority = -1},
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {

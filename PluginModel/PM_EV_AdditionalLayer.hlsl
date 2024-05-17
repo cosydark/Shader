@@ -51,7 +51,6 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
 {
     float4 BlendMask = MInput.PluginChannelData.Data0;
     BlendMask.b = saturate(pow(BlendMask.b, _AdditionalLayer_MaskContrast) * _AdditionalLayer_MaskIntensity);
-    float LocalScaleX = MInput.PluginChannelData.Data1.x;
     BlendWithHeightNoTexture(   _AdditionalLayer_BaseColor,
                                 _AdditionalLayer_NormalScale,
                                 _AdditionalLayer_Metallic,

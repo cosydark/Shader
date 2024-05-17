@@ -1,6 +1,6 @@
 #ifdef PM_HEADER
 #attribute Plugin.Author = "QP4B"
-#attribute Plugin.Name = "BaseLayer"
+#attribute Plugin.Name = "BaseLayer_Architecture"
 #attribute Plugin.Priority = 0
 #attribute Plugin.AlwaysEnable = True
 
@@ -9,17 +9,17 @@
 
 #stylesheet
 # Base
-- _BaseLayer_DetailMap @TryInline(1)
-- _BaseLayer_DetailIntensity
-- _BaseLayer_DetailNormalScale
-- _BaseLayer_UVIndex @Drawer(Enum, 0, 1)
+- _BaseLayer_Architecture_DetailMap @TryInline(1)
+- _BaseLayer_Architecture_DetailIntensity
+- _BaseLayer_Architecture_DetailNormalScale
+- _BaseLayer_Architecture_UVIndex @Drawer(Enum, 0, 1)
 #endstylesheet
 
 #properties
-_BaseLayer_DetailMap ("Detail Map", 2D) = "linearGrey" {}
-_BaseLayer_DetailIntensity ("Detail Scale", Range(0, 1)) = 1
-_BaseLayer_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
-_BaseLayer_UVIndex ("UV Index", Int) = 0
+_BaseLayer_Architecture_DetailMap ("Detail Map", 2D) = "linearGrey" {}
+_BaseLayer_Architecture_DetailIntensity ("Detail Scale", Range(0, 1)) = 1
+_BaseLayer_Architecture_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
+_BaseLayer_Architecture_UVIndex ("UV Index", Int) = 0
 #endproperties
 #endif
 
@@ -31,17 +31,17 @@ _BaseLayer_UVIndex ("UV Index", Int) = 0
 
 void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
-    float2 BaseCoordinate = PrepareTextureCoordinates(_BaseLayer_UVIndex, PixelIn);
-    // float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_NormalScale);
-    float4 DetailMap = SAMPLE_TEXTURE2D(_BaseLayer_DetailMap, SamplerLinearRepeat, BaseCoordinate);
+    float2 BaseCoordinate = PrepareTextureCoordinates(_BaseLayer_Architecture_UVIndex, PixelIn);
+    // float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_Architecture_NormalScale);
+    float4 DetailMap = SAMPLE_TEXTURE2D(_BaseLayer_Architecture_DetailMap, SamplerLinearRepeat, BaseCoordinate);
     float AlbedoGrayscale = DetailMap.r;
     float AmbientOcclusion = DetailMap.b;
-    float3 DetailNormalTS = GetNormalTSFromDetailMap(DetailMap, _BaseLayer_DetailIntensity * _BaseLayer_DetailNormalScale);
+    float3 DetailNormalTS = GetNormalTSFromDetailMap(DetailMap, _BaseLayer_Architecture_DetailIntensity * _BaseLayer_Architecture_DetailNormalScale);
     
     MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(    DetailNormalTS,
                                                                     MInput.TangentSpaceNormal.NormalTS);
-    MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_DetailIntensity));
-    MInput.Base.Color *=  lerp(1, AlbedoGrayscale, _BaseLayer_DetailIntensity);
+    MInput.AO.AmbientOcclusion = min(AmbientOcclusion, lerp(1, MInput.AO.AmbientOcclusion, _BaseLayer_Architecture_DetailIntensity));
+    MInput.Base.Color *=  lerp(1, AlbedoGrayscale, _BaseLayer_Architecture_DetailIntensity);
 }
 
 

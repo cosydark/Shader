@@ -66,10 +66,10 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     float2 ToppingCoordinates = _ToppingLayer_UVIndex < FLT_EPS ? PixelIn.UV0 : PixelIn.UV1;
     ToppingCoordinates = ToppingCoordinates * _ToppingLayer_Tiling * (_ToppingLayer_MatchScaling > FLT_EPS ? LocalScaleX : 1);
     // Compute N Dot Up
-    float3 NormalWS = TransformVectorTSToVectorWS_RowMajor(MInput.TangentSpaceNormal.NormalTS, PixelIn.TangentToWorldMatrix, true);
+    float3 NormalWS = TransformVectorTSToVectorWS_RowMajor(MInput.PluginChannelData.Data0.xyz, PixelIn.TangentToWorldMatrix, true);
     NormalWS = lerp(PixelIn.GeometricNormalWS, NormalWS, _ToppingLayer_NormalIntensity);
-    float3 NdotUp = dot(NormalWS, normalize(float3(0, 1, 0)));
-    float Coverage = NdotUp - lerp(1, -1, _ToppingLayer_Coverage);
+    float3 NDotUp = dot(NormalWS, normalize(float3(0, 1, 0)));
+    float Coverage = NDotUp - lerp(1, -1, _ToppingLayer_Coverage);
     Coverage = saturate(Coverage / _ToppingLayer_Spread);
     
     BlendWithHeight(    _ToppingLayer_BaseMap,
