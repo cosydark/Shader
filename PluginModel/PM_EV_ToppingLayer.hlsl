@@ -71,7 +71,9 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     float3 NDotUp = dot(NormalWS, normalize(float3(0, 1, 0)));
     float Coverage = NDotUp - lerp(1, -1, _ToppingLayer_Coverage);
     Coverage = saturate(Coverage / _ToppingLayer_Spread);
-    
+    //
+    float HeightMask = 0;
+    float3 NormalTS = float3(0, 0, 1);
     BlendWithHeight(    _ToppingLayer_BaseMap,
                         _ToppingLayer_BaseColor,
                         _ToppingLayer_NormalMap,
@@ -84,14 +86,19 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                         _ToppingLayer_HeightOffset,
                         _ToppingLayer_BlendMode,
                         MInput.Base.Color,
-                        MInput.TangentSpaceNormal.NormalTS,
+                        NormalTS,
                         MInput.Base.Metallic,
                         MInput.AO.AmbientOcclusion,
                         MInput.Detail.Height,
                         MInput.Base.Roughness,
-                        MInput.Base.Roughness
+                        MInput.Base.Roughness,
+                        HeightMask
                     );
-    // Apply Topping Layer
+    // Apply Tiling Layer Normal
+    NormalTS = BlendAngelCorrectedNormals(MInput.PluginChannelData.Data0.xyz, NormalTS);
+    MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalTS, HeightMask);
+    // Prepare Topping Data For Detail Layer
+    MInput.PluginChannelData.Data1.y = HeightMask;
 }
 
 

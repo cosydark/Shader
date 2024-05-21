@@ -80,6 +80,57 @@ void BlendWithHeight(	Texture2D<float4> BaseMap,
     Height = lerp(Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
     Roughness = lerp(Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
 }
+void BlendWithHeight(	Texture2D<float4> BaseMap,
+                        float4 BaseColor,
+                        Texture2D<float4> NormalMap,
+                        float NormalScale,
+                        Texture2D<float4> MaskMap,
+                        float Reflectance_Attribute,
+                        float2 Coordinate,
+                        float IntensityMask,
+                        float BlendRadius,
+                        float HeightOffset,
+                        float BlendMode,
+                        inout float3 Color,
+                        inout float3 NormalTS,
+                        inout float Metallic,
+                        inout float AmbientOcclusion,
+                        inout float Height,
+                        inout float Roughness,
+                        inout float Reflectance,
+                        inout float HeightMask
+                    )
+{
+    float4 BaseMapBlend = SAMPLE_TEXTURE2D(BaseMap, SamplerTriLinearRepeat, Coordinate) * BaseColor;
+    float4 NormalMapBlend = SAMPLE_TEXTURE2D(NormalMap, SamplerLinearRepeat, Coordinate);
+    float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, NormalScale);
+    float4 MaskMapBlend = SAMPLE_TEXTURE2D(MaskMap, SamplerLinearRepeat, Coordinate);
+	
+    float HeightBlendMask;
+    // TODO(QP4B) A Better Height Blend Function ?
+    BRANCH
+    switch (BlendMode)
+    {
+    case 1:
+        HeightBlendMask = HeightBlend(IntensityMask, saturate(ModifyHeight(MaskMapBlend.z, HeightOffset)), 1, Height, BlendRadius).x;
+        break;
+    case 2:
+        HeightBlendMask = HeightBlend(1, saturate(ModifyHeight(MaskMapBlend.z, HeightOffset)), IntensityMask, Height, BlendRadius).y;
+        break;
+    default:
+        HeightBlendMask = IntensityMask;
+        break;
+    }
+    // Color = HeightBlendMask;
+    Color = lerp(Color, BaseMapBlend, HeightBlendMask);
+    NormalTS = lerp(NormalTS, NormalBlend, HeightBlendMask);
+    Reflectance = lerp(Reflectance, Reflectance_Attribute, HeightBlendMask);
+    Metallic = lerp(Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), HeightBlendMask);
+    AmbientOcclusion = lerp(AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
+    Height = lerp(Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
+    Roughness = lerp(Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
+    HeightMask = HeightBlendMask;
+}
 void BlendWithHeightNoTexture(	float4 Color_Attribute,
                                 float NormalScale_Attribute,
                                 float Metallic_Attribute,
