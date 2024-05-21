@@ -11,9 +11,9 @@
 #stylesheet
 
 # Detail
-- _DetailLayer_DetailMap @TryInline(1)
-- _DetailLayer_DetailIntensity
-- _DetailLayer_DetailNormalScale
+- _DetailLayer_NormalMap @TryInline(1)
+- _DetailLayer_NormalScale
+- _DetailLayer_MaskMap @TryInline(0)
 ###
 ### Tiling Option
 - _DetailLayer_Tiling_Detail
@@ -24,9 +24,10 @@
 #endstylesheet
 
 #properties
-_DetailLayer_DetailIntensity ("Detail Intensity", Range(0, 1)) = 1
-_DetailLayer_DetailMap ("Detail Map", 2D) = "linearGrey" {}
-_DetailLayer_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
+_DetailLayer_NormalMap ("Normal Map", 2D) = "bump" {}
+_DetailLayer_NormalScale ("Normal Scale", Range(0, 1)) = 1
+_DetailLayer_MaskMap ("Mask Map", 2D) = "linearGrey" {}
+
 _DetailLayer_Tiling_Detail ("Tiling Detail", Float) = 1
 _DetailLayer_MatchScaling_Detail ("Match Scaling Detail", Int) = 0
 _DetailLayer_UVIndex_Detail ("UV Index", Int) = 0
@@ -46,16 +47,12 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     float2 DetailCoordinate = PrepareTextureCoordinates(_DetailLayer_UVIndex_Detail, PixelIn);
     DetailCoordinate = DetailCoordinate * _DetailLayer_Tiling_Detail * (_DetailLayer_MatchScaling_Detail > FLT_EPS ? LocalScaleX : 1);
     
-    ApplyDetailMapHex(	_DetailLayer_DetailMap,
-                        _DetailLayer_DetailIntensity,
-                        _DetailLayer_DetailNormalScale,
-                        DetailCoordinate,
-                        _DetailLayer_DetailIntensity,
-                        MInput.Base.Roughness,
-                        MInput.TangentSpaceNormal.NormalTS,
-                        MInput.AO.AmbientOcclusion,
-                        _DetailLayer_HexTilingInfo
-                    );
+    float4 MaskMap = SampleTexture2DHex(_DetailLayer_MaskMap, SamplerLinearRepeat, DetailCoordinate, _DetailLayer_HexTilingInfo.x, _DetailLayer_HexTilingInfo.y, _DetailLayer_HexTilingInfo.z, _DetailLayer_HexTilingInfo.w);
+    float4 NormalMap = SampleTexture2DHex(_DetailLayer_NormalMap, SamplerLinearRepeat, DetailCoordinate, _DetailLayer_HexTilingInfo.x, _DetailLayer_HexTilingInfo.y, _DetailLayer_HexTilingInfo.z, _DetailLayer_HexTilingInfo.w);
+    float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _DetailLayer_NormalScale);
+    NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
+    MInput.TangentSpaceNormal.NormalTS = lerp(NormalTS, MInput.TangentSpaceNormal.NormalTS, MInput.PluginChannelData.Data1.y);
+    MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
 }
 
 

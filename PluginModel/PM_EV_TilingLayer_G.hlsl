@@ -58,7 +58,7 @@ _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
     float4 BlendMask = MInput.PluginChannelData.Data0;
-    BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
+    BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
     float LocalScaleX = MInput.PluginChannelData.Data1.x;
     float2 TilingLayer_2_Coordinate = PrepareTextureCoordinates(_TilingLayer_G_UVIndex, PixelIn);
     BlendWithHeight(	_TilingLayer_G_BaseMap,
@@ -81,7 +81,6 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
                         MInput.Specular.Reflectance
             );
 }
-
 
 // void PostProcessFinalColor(FPixelInput PixelIn, FSurfacePositionData PosData, inout float4 FinalColor)
 // {

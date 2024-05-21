@@ -45,9 +45,9 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
             new PluginModelDesc {name = "AdditionalLayer", needMultiCompile = true},
             // Blend Base Layer
             new PluginModelDesc {name = "BaseLayer_Rock", needMultiCompile = false, displayPriority = -1},
+            new PluginModelDesc {name = "ToppingLayer", needMultiCompile = true},
             new PluginModelDesc {name = "DetailLayer", needMultiCompile = true},
             // Topping
-            new PluginModelDesc {name = "ToppingLayer", needMultiCompile = true},
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {

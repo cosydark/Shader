@@ -41,8 +41,9 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
     MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
     MInput.Base.Roughness *= GetPerceptualRoughnessFromMaskMap(MaskMap);
-
-    MInput.PluginChannelData.Data0.xyz = NormalTS;// Prepare Data For Topping Layer
+    // Prepare Data For Topping Layer
+    
+    MInput.PluginChannelData.Data0.xyz = NormalTS;
 }
 
 
