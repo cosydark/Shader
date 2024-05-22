@@ -2,7 +2,7 @@
 
 #ifdef MM_HEADER
 #attribute Material.Author = "QP4B"
-#attribute Material.Name = "CommonTransmission"
+#attribute Material.Name = "CH_TransmissionSlime"
 #attribute Material.ShadingModel = "Transmission"
 
 // ==========================================================
@@ -73,16 +73,16 @@ _PhaseAniso ("PhaseAniso", Range(-1, 1)) = 0
 #materialoption.ShadowTerminator 		  = Enable
 #materialoption.TangentSpaceNormalMap     = Enable
 #materialoption.PixelDepthOffset          = Disable
-
 #materialoption.PerObjectShadow           = Enable
 #materialoption.CustomizeVertexOutputData = Enable
-
+#materialoption.Reflectance 			  = Enable
 #materialoption.UseSlab                   = Enable
+#materialoption.CustomSkyTransmission     = Enable
 
 // ===================================================================================================================
 
 #else
-#include "./MM_CommonTransmission.Header.hlsl"
+#include "./MM_CH_TransmissionSlime.Header.hlsl"
 #endif
 
 #include "Packages/com.funplus.xrender/Shaders/Library/Common.hlsl"
@@ -185,6 +185,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     MInput.Transmission.Thickness *= PixelIn.CustomVertexData.r;
     #endif
 
+	MInput.Specular.IOR = 1.1;
 }
 
 // ===================================================================================================================
