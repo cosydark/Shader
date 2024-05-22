@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 #if XRP_SHADER_INSTANTIATION_META
 {
-    "ClassName": "CH_SlimeShader",
-    "Name": "XRender/Character/Slime",
-    "OutputPath": "Assets/Res/Shader/SurfaceShaderLibrary/CH_Slime.shader",
-    "MM": "CH_Slime",
+    "ClassName": "CH_TransmissionSlime",
+    "Name": "XRender/Environment/TransmissionSlime",
+    "OutputPath": "Assets/Res/Shader/SurfaceShaderLibrary/CH_TransmissionSlime.shader",
+    "MM": "TransmissionSlime",
     "SM": "SHADING_MODEL_STANDARD_PBR",
     "Owner": "QP4B",
     "Usage": "Character",
-    "Desc": "A slime shader for Pet",
+    "Desc": "A Transmission Slime Material",
     "PMs": [],
     "Config": [
         "SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Option)",
@@ -28,24 +28,18 @@ using UnityEngine;
 namespace UnityEditor.XRender.XShaderGen.Instantiation
 {
     [SurfaceShaderInstantiationAttribute]
-    public class CH_SlimeShader : XSurfaceShader
+    public class CH_TransmissionSlime : XSurfaceShader
     {
-        public override string GetName() => "XRender/Character/Slime";
+        public override string GetName() => "XRender/Environment/TransmissionSlime";
         public override string GetOwner() => "QP4B";
-        public override string GetDesc() => "A slime shader for Pet";
-        public override SurfaceShaderUsage GetUsage() => SurfaceShaderUsage.Character;
-        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/CH_Slime.shader";
-        protected override string GetMaterialModelName() => "CH_Slime";
+        public override string GetDesc() => "A Transmission Slime Material";
+        public override SurfaceShaderUsage GetUsage() => SurfaceShaderUsage.Environment;
+        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/CH_TransmissionSlime.shader";
+        protected override string GetMaterialModelName() => "CH_TransmissionSlime";
         protected override string GetShadingModelName() => "SHADING_MODEL_STANDARD_PBR";
         protected override List<PluginModelDesc> InitPluginModelDescs() => new()
         {
-            new PluginModelDesc { name = "SquashVertexPluginModel", needMultiCompile = true},
-            // new PluginModelDesc { name = "CommonFade", needMultiCompile = true},
-            new PluginModelDesc { name = "VFXFresnelPluginModel", needMultiCompile = false},
-            new PluginModelDesc { name = "DissolvePluginModel", needMultiCompile = true},
-            new PluginModelDesc { name = "HitFlashPluginModel", needMultiCompile = true},
-            new PluginModelDesc { name = "AntiExposurePluginModel", needMultiCompile = false},
-            new PluginModelDesc { name = "ElementalEffectPluginModel", needMultiCompile = true},
+            // new PluginModelDesc {name = "DefaultPluginModel", needMultiCompile = false},
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {
@@ -57,9 +51,11 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
             config.SetOptionZWrite(ShaderOptionFlag.OptionalEnable);
             config.SetOptionTransparentZWrite(ShaderOptionFlag.OptionalDisable);
             config.SetOptionRefraction(ShaderOptionFlag.OptionalDisable);
-            config.SetSupportDotsInstancing(true);
+            
+            config.SetSupportDoublePassTransparent();
+            config.SetSupportDoublePassPreZ();
         }
     }
 }
-//ss:[[-1361121874]]
+//ss:[[-901051071]]
 
