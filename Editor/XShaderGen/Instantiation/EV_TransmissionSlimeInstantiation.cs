@@ -30,7 +30,7 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
     [SurfaceShaderInstantiationAttribute]
     public class CH_TransmissionSlime : XSurfaceShader
     {
-        public override string GetName() => "XRender/Environment/TransmissionSlime";
+        public override string GetName() => "XRender/Character/TransmissionSlime";
         public override string GetOwner() => "QP4B";
         public override string GetDesc() => "A Transmission Slime Material";
         public override SurfaceShaderUsage GetUsage() => SurfaceShaderUsage.Environment;
@@ -43,13 +43,13 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {
-            config.SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Option);
+            config.SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Transparent);
             config.SetOptionTransQueue(SurfaceShaderConfig.TransQueue.Option);
-            config.SetAlphaBlendMode(SurfaceShaderConfig.BlendModeOption.Option);
-            config.SetOptionCullMode(SurfaceShaderConfig.CullModeOption.Option);
-            config.SetOptionAlphaCutoffEnable(ShaderOptionFlag.OptionalDisable);
+            config.SetAlphaBlendMode(SurfaceShaderConfig.BlendModeOption.Alpha);
+            config.SetOptionCullMode(SurfaceShaderConfig.CullModeOption.Back);
+            config.SetOptionAlphaCutoffEnable(ShaderOptionFlag.AlwaysDisable);
             config.SetOptionZWrite(ShaderOptionFlag.OptionalEnable);
-            config.SetOptionTransparentZWrite(ShaderOptionFlag.OptionalDisable);
+            config.SetOptionTransparentZWrite(ShaderOptionFlag.AlwaysDisable);
             config.SetOptionRefraction(ShaderOptionFlag.OptionalDisable);
             
             config.SetSupportDoublePassTransparent();
@@ -57,5 +57,15 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
         }
     }
 }
+// config.SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Transparent);
+// config.SetSupportDoublePassTransparent();
+// config.SetOptionTransQueue(SurfaceShaderConfig.TransQueue.Trans);
+// config.SetAlphaBlendMode(SurfaceShaderConfig.BlendModeOption.Alpha);
+// config.SetOptionCullMode(SurfaceShaderConfig.CullModeOption.Back);
+// config.SetOptionAlphaCutoffEnable(ShaderOptionFlag.AlwaysDisable);
+// config.SetOptionZWrite(ShaderOptionFlag.OptionalEnable);
+// config.SetOptionTransparentZWrite(ShaderOptionFlag.AlwaysDisable);
+// config.SetOptionRefraction(ShaderOptionFlag.OptionalDisable);
+// config.SetOptionCullMode(SurfaceShaderConfig.CullModeOption.Back);
 //ss:[[-901051071]]
 
