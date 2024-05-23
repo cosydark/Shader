@@ -16,6 +16,10 @@
 - _MaskMap @TryInline(0)
 - _EmissiveMap @TryInline(1)
 - _EmissiveColor
+- _Metallic
+- _Occlusion
+- _Height
+- _Roughness
 - _Reflectance
 
 # Transmission Layer
@@ -47,18 +51,22 @@ _BaseMap ("Base Map", 2D) = "white" {}
 [HDR] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 [Normal] _NormalMap ("Normal Map", 2D) = "bump" {} // Tangent Space NormalMap
 _NormalScale ("Normal Scale", Range(0, 2)) = 1
-_MaskMap ("MaskMap", 2D) = "linearGrey" {} // R Metallic, G Occlusion, B Curvature, A Roughness
+_MaskMap ("MaskMap (MOHR)", 2D) = "linearGrey" {} // R Metallic, G Occlusion, B Curvature, A Roughness
 _EmissiveMap ("Emissive Map", 2D) = "white" {}
 [HDR] _EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
+_Metallic ("Metallic", Range(0, 1)) = 0
+_Occlusion ("Occlusion", Range(0, 1)) = 1
+_Height ("Height", Range(0, 1)) = 1
+_Roughness ("Roughness", Range(0, 1)) = 1
 _Reflectance ("Reflectance", Range(0, 1)) = 0.5
 // Transmission
-_Weight ("TransmissionWeight", Range(0, 1)) = 1
+_Weight ("Transmission Weight", Range(0, 1)) = 1
 _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
 _TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
 _ThicknessMap ("Thickness Map", 2D) = "white" {}
 _Thickness ("Thickness", Range(0, 100)) = 1
 _MFPScale ("MFP Scale", Range(0.1, 100)) = 1
-_PhaseAniso ("PhaseAniso", Range(-1, 1)) = 0
+_PhaseAniso ("Phase Aniso", Range(-1, 1)) = 0
 // ThinFilm
 _ThinFilmThicknessMap ("Thin Film Thickness Map", 2D) = "white" {}
 _ThinFilmThickness ("Thin Film Thickness", Range(0, 1)) = 0.27
@@ -93,6 +101,7 @@ _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonLighting.hlsl"
+#include "Assets/Res/Shader/Includes/ResShaderIncludesIndex.hlsl"
 
 // ===================================================================================================================
 // for vs
@@ -156,16 +165,21 @@ float3 CalculateVertexOffsetWorldSpace(in FVertexInput VertIn)
 
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
+	// Fresnel
+	PixelIn.GeometricNormalWS *= PixelIn.IsFrontFacing ? 1 : -1;
+	float NDotV = saturate(dot(PixelIn.GeometricNormalWS, PosData.CameraVectorWS));
+	float Rim = 1 - NDotV;
 	// Base
     float2 BaseMapUV = PixelIn.UV0;
     float4 BaseMap = SAMPLE_TEXTURE2D(_BaseMap, SamplerLinearRepeat, BaseMapUV);
     float4 MaskMap = SAMPLE_TEXTURE2D(_MaskMap, SamplerLinearRepeat, BaseMapUV);
-    float4 BaseColor = BaseMap * _BaseColor;
-    MInput.Base.Color = BaseColor.rgb;
-    MInput.Base.Opacity = BaseColor.a;
-    MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(MaskMap);
-    MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(MaskMap);
-    MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(MaskMap);
+	float4 BaseColor = BaseMap * _BaseColor;
+	MInput.Base.Color = BaseColor.rgb;
+	MInput.Base.Opacity = BaseColor.a;
+	MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(MaskMap) * _Metallic;
+	MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(MaskMap) * _Roughness;
+	MInput.AO.AmbientOcclusion = LerpWhiteTo(GetMaterialAOFromMaskMap(MaskMap), _Occlusion);
+
     float4 NormalMap = SAMPLE_TEXTURE2D(_NormalMap, SamplerLinearRepeat, BaseMapUV);
     MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(NormalMap, _NormalScale);
     MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
@@ -180,15 +194,15 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     MInput.Transmission.SSSMFPScale = _MFPScale;
     MInput.Transmission.Thickness = SAMPLE_TEXTURE2D(_ThicknessMap, SamplerLinearRepeat, BaseMapUV).r * _Thickness;
     MInput.Transmission.SSSPhaseAniso = _PhaseAniso;
-	//
+	// Thin Film
 	float2 ThinFilmUV = PixelIn.UV0;
 	MInput.ThinFilm.Thickness = SAMPLE_TEXTURE2D(_ThinFilmThicknessMap, SamplerLinearRepeat, ThinFilmUV).r * _ThinFilmThickness;
 	MInput.ThinFilm.Factor = SAMPLE_TEXTURE2D(_ThinFilmFactorMask, SamplerLinearRepeat, BaseMapUV).r * _ThinFilmFactor;
 	
     #if defined(USE_VERTEX_ATTR_CUSTOM_OUTPUT_DATA)
-    // SSSMFPScale is a material params, it means color(1, 1, 1) trans through cur mat by this thick will turn to transmittance_color
+    // SSS MFP Scale is a material params, it means color(1, 1, 1) trans through cur mat by this thick will turn to transmittance_color
     // so this place no need multi really object's thickness to SSSMFPScale
-    // // todo, thickness may get from thickness map, this situation must transform from [0, 1] to world space thickness
+    // todo, thickness may get from thickness map, this situation must transform from [0, 1] to world space thickness
     MInput.Transmission.Thickness *= PixelIn.CustomVertexData.r;
     #endif
 }
