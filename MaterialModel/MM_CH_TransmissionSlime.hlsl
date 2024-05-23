@@ -8,9 +8,11 @@
 // ==========================================================
 
 #stylesheet
+
 # Base Layer
 - _BaseMap @TryInline(1)
 - _BaseColor
+- _AlphaRimPower
 - _NormalMap @TryInline(1)
 - _NormalScale
 - _MaskMap @TryInline(0)
@@ -18,10 +20,9 @@
 - _EmissiveColor
 - _Metallic
 - _Occlusion
-- _Height
 - _Roughness
+- _RoughnessRimPower
 - _Reflectance
-
 # Transmission Layer
 - _Weight
 - _TransmissionColorMap @TryInline(1)
@@ -30,12 +31,15 @@
 - _Thickness
 - _MFPScale
 - _PhaseAniso
-
 # ThinFilm Layer
 - _ThinFilmThicknessMap @TryInline(1)
 - _ThinFilmThickness
 - _ThinFilmFactorMask @TryInline(1)
 - _ThinFilmFactor
+# Flow
+- _FlowNormalMap @TryInline(0)
+- _FlowMatcap @TryInline(0)
+- _FlowIntensity
 
 # Refraction @Hide(_Refraction == 0)
 - _IOR
@@ -56,13 +60,15 @@ _EmissiveMap ("Emissive Map", 2D) = "white" {}
 [HDR] _EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
 _Metallic ("Metallic", Range(0, 1)) = 0
 _Occlusion ("Occlusion", Range(0, 1)) = 1
-_Height ("Height", Range(0, 1)) = 1
 _Roughness ("Roughness", Range(0, 1)) = 1
 _Reflectance ("Reflectance", Range(0, 1)) = 0.5
+// Rim
+_AlphaRimPower ("Alpha Rim Power", Range(0, 2)) = 1
+_RoughnessRimPower ("Roughness Rim Power", Range(0, 2)) = 1
 // Transmission
 _Weight ("Transmission Weight", Range(0, 1)) = 1
 _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
-_TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
+[HDR] _TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
 _ThicknessMap ("Thickness Map", 2D) = "white" {}
 _Thickness ("Thickness", Range(0, 100)) = 1
 _MFPScale ("MFP Scale", Range(0.1, 100)) = 1
@@ -72,6 +78,10 @@ _ThinFilmThicknessMap ("Thin Film Thickness Map", 2D) = "white" {}
 _ThinFilmThickness ("Thin Film Thickness", Range(0, 1)) = 0.27
 _ThinFilmFactorMask ("Thin Film Factor Mask", 2D) = "white" {}
 _ThinFilmFactor ("Thin Film Factor", Range(0, 2)) = 1
+// Flow
+_FlowNormalMap ("Flow Normal Map", 2D) = "white" {}
+_FlowMatcap ("Flow Matcap", 2D) = "white" {}
+_FlowIntensity ("Flow Intensity", Range(0, 5)) = 1
 // Refraction
 _IOR ("IOR", Range(-3, 3)) = 1.5
 _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
@@ -163,33 +173,55 @@ float3 CalculateVertexOffsetWorldSpace(in FVertexInput VertIn)
 // ===================================================================================================================
 // for ps
 
+float4 TriPlanarProjection( float3 PositionWS, Texture2D Tex, float Tiling, float3 Weight )
+{
+	float3 PositionOS = PositionWS - TransformPositionOSToPositionWS(float3(0, 0, 0), GetObjectToWorldMatrix());
+	float4 Color0 = Weight.x > 0.0 ? SAMPLE_TEXTURE2D(Tex, SamplerLinearRepeat, PositionOS.yz * Tiling) : float4(0, 0, 0, 0);
+	float4 Color1 = Weight.y > 0.0 ? SAMPLE_TEXTURE2D(Tex, SamplerLinearRepeat, PositionOS.zx * Tiling) : float4(0, 0, 0, 0);
+	float4 Color2 = Weight.z > 0.0 ? SAMPLE_TEXTURE2D(Tex, SamplerLinearRepeat, PositionOS.xy * Tiling) : float4(0, 0, 0, 0);
+	float4 Color3 = float4(1, 1, 1, 0);
+	float4 Weight4 = (Weight.x + Weight.y + Weight.z) > 0.0 ? float4(Weight, 0) : float4(Weight, 1);
+	return (Color0 * Weight4.x + Color1 * Weight4.y + Color2 * Weight4.z + Color3 * Weight4.w) / (Weight4.x + Weight4.y + Weight4.z + Weight4.w);
+}
+float3 SampleMatap(float3 NormalWS, Texture2D<float4> Tex)
+{
+	float2 Coordinate = mul(GetWorldToViewMatrix(), NormalWS).xy * 0.5 + 0.5;
+	return SAMPLE_TEXTURE2D(Tex, SamplerLinearRepeat, Coordinate).xyz;
+}
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
 	// Fresnel
 	PixelIn.GeometricNormalWS *= PixelIn.IsFrontFacing ? 1 : -1;
 	float NDotV = saturate(dot(PixelIn.GeometricNormalWS, PosData.CameraVectorWS));
-	float Rim = 1 - NDotV;
+	float AlphaRim = _AlphaRimPower < 1.99 ? pow(1 - NDotV, _AlphaRimPower) : 0;
+	float RoughnessRim = _RoughnessRimPower < 1.99 ? pow(1 - NDotV, _RoughnessRimPower) : 0;
 	// Base
     float2 BaseMapUV = PixelIn.UV0;
     float4 BaseMap = SAMPLE_TEXTURE2D(_BaseMap, SamplerLinearRepeat, BaseMapUV);
     float4 MaskMap = SAMPLE_TEXTURE2D(_MaskMap, SamplerLinearRepeat, BaseMapUV);
 	float4 BaseColor = BaseMap * _BaseColor;
 	MInput.Base.Color = BaseColor.rgb;
-	MInput.Base.Opacity = BaseColor.a;
+	MInput.Base.Opacity = lerp(BaseColor.a, 0, AlphaRim);
 	MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(MaskMap) * _Metallic;
-	MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(MaskMap) * _Roughness;
+	MInput.Base.Roughness = lerp(GetPerceptualRoughnessFromMaskMap(MaskMap) * _Roughness, 0, RoughnessRim);
 	MInput.AO.AmbientOcclusion = LerpWhiteTo(GetMaterialAOFromMaskMap(MaskMap), _Occlusion);
 
     float4 NormalMap = SAMPLE_TEXTURE2D(_NormalMap, SamplerLinearRepeat, BaseMapUV);
     MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(NormalMap, _NormalScale);
     MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
+	// Flow
+	float3 PositionWS = PixelIn.PositionWS + float3(0, _Time.y * 0.2, _Time.y * 0.1); float3 NormalWS = PixelIn.GeometricNormalWS;
+	float3 FlowNoise = normalize(TriPlanarProjection(PositionWS, _FlowNormalMap, 1, float3(1, 1, 1))) * _FlowIntensity;
+	float3 FlowNormalWS = normalize(float4(NormalWS.x + FlowNoise.x, NormalWS.y + FlowNoise.y, NormalWS.z, 0));
+	float MatcapColor = SampleMatap(FlowNormalWS, _FlowMatcap).r;
+	// float3 
 	// Distortion
 	MInput.Specular.Reflectance = _Reflectance;
 	MInput.Specular.IOR = _IOR;
 	MInput.Specular.RoughRefractionDepthOffset = _RoughRefractionDepthOffset;
 	// Transmission
     MInput.Transmission.Weight = _Weight;
-    float3 TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * _TransmissionColor.rgb;
+    float3 TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * lerp(_TransmissionColor.rgb, float3(0, 0.5, 0), MatcapColor);
     MInput.Transmission.SSSMFP = TransmittanceToMeanFreePath(TransmittanceColor, VOLUME_DEFAULT_THICKNESS_M);
     MInput.Transmission.SSSMFPScale = _MFPScale;
     MInput.Transmission.Thickness = SAMPLE_TEXTURE2D(_ThicknessMap, SamplerLinearRepeat, BaseMapUV).r * _Thickness;
@@ -205,6 +237,10 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     // todo, thickness may get from thickness map, this situation must transform from [0, 1] to world space thickness
     MInput.Transmission.Thickness *= PixelIn.CustomVertexData.r;
     #endif
+
+	#if defined(USE_DEBUG_MODE)
+	MInput.DebugCustomData.DebugCustomData0 = MatcapColor;
+	#endif
 }
 
 // ===================================================================================================================
