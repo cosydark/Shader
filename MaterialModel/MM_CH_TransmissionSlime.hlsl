@@ -9,31 +9,33 @@
 
 #stylesheet
 # Base Layer
-- _BaseMap
+- _BaseMap @TryInline(1)
 - _BaseColor
-
-# Normal Layer
-- _NormalMap
+- _NormalMap @TryInline(1)
 - _NormalScale
-
-# PBR Layer
-- _MaskMap @Tooltip(R: Metallic, G: Occlusion, B: Heightmap, A: Roughness)
-- _Metallic
-- _Occlusion
-- _Roughness
-
-# Emissive Layer
-- _EmissiveMap
+- _MaskMap @TryInline(0)
+- _EmissiveMap @TryInline(1)
 - _EmissiveColor
+- _Reflectance
 
 # Transmission Layer
 - _Weight
-- _TransmissionColorMap
+- _TransmissionColorMap @TryInline(1)
 - _TransmissionColor
-- _MFPScale
-- _ThicknessMap
+- _ThicknessMap @TryInline(1)
 - _Thickness
+- _MFPScale
 - _PhaseAniso
+
+# ThinFilm Layer
+- _ThinFilmThicknessMap @TryInline(1)
+- _ThinFilmThickness
+- _ThinFilmFactorMask @TryInline(1)
+- _ThinFilmFactor
+
+# Refraction @Hide(_Refraction == 0)
+- _IOR
+- _RoughRefractionDepthOffset
 
 #endstylesheet
 
@@ -41,30 +43,30 @@
 
 #properties
 // Base Layer
-[NoScaleOffset] _BaseMap ("Base Map", 2D) = "white" {}
+_BaseMap ("Base Map", 2D) = "white" {}
 [HDR] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-[NoScaleOffset] [Normal] _NormalMap ("Normal Map", 2D) = "bump" {} // Tangent Space NormalMap
+[Normal] _NormalMap ("Normal Map", 2D) = "bump" {} // Tangent Space NormalMap
 _NormalScale ("Normal Scale", Range(0, 2)) = 1
-
-// PBR Layer
-[NoScaleOffset] _MaskMap ("MaskMap", 2D) = "white" {} // R Metallic, G Occlusion, B Curvature, A Roughness
-_Metallic ("Metallic", Range(0, 1)) = 0
-_Occlusion ("Occlusion", Range(0, 1)) = 1
-_Roughness ("Roughness", Range(0, 1)) = 0.75
-
-// Emissive Layer
-[NoScaleOffset] _EmissiveMap ("Emissive Map", 2D) = "white" {}
+_MaskMap ("MaskMap", 2D) = "linearGrey" {} // R Metallic, G Occlusion, B Curvature, A Roughness
+_EmissiveMap ("Emissive Map", 2D) = "white" {}
 [HDR] _EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
-
-// Transmission Layer
+_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+// Transmission
 _Weight ("TransmissionWeight", Range(0, 1)) = 1
-[NoScaleOffset] _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
+_TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
 _TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
-_MFPScale ("MFP Scale", Range(0.1, 100)) = 1
-[NoScaleOffset] _ThicknessMap ("Thickness Map", 2D) = "white" {}
+_ThicknessMap ("Thickness Map", 2D) = "white" {}
 _Thickness ("Thickness", Range(0, 100)) = 1
+_MFPScale ("MFP Scale", Range(0.1, 100)) = 1
 _PhaseAniso ("PhaseAniso", Range(-1, 1)) = 0
-
+// ThinFilm
+_ThinFilmThicknessMap ("Thin Film Thickness Map", 2D) = "white" {}
+_ThinFilmThickness ("Thin Film Thickness", Range(0, 1)) = 0.27
+_ThinFilmFactorMask ("Thin Film Factor Mask", 2D) = "white" {}
+_ThinFilmFactor ("Thin Film Factor", Range(0, 2)) = 1
+// Refraction
+_IOR ("IOR", Range(-3, 3)) = 1.5
+_RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
 #endproperties
 
 // ===================================================================================================================
@@ -78,6 +80,7 @@ _PhaseAniso ("PhaseAniso", Range(-1, 1)) = 0
 #materialoption.Reflectance 			  = Enable
 #materialoption.UseSlab                   = Enable
 #materialoption.CustomSkyTransmission     = Enable
+#materialoption.ThinFilm				  = Enable
 
 // ===================================================================================================================
 
@@ -153,39 +156,41 @@ float3 CalculateVertexOffsetWorldSpace(in FVertexInput VertIn)
 
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
+	// Base
     float2 BaseMapUV = PixelIn.UV0;
     float4 BaseMap = SAMPLE_TEXTURE2D(_BaseMap, SamplerLinearRepeat, BaseMapUV);
     float4 MaskMap = SAMPLE_TEXTURE2D(_MaskMap, SamplerLinearRepeat, BaseMapUV);
-
     float4 BaseColor = BaseMap * _BaseColor;
     MInput.Base.Color = BaseColor.rgb;
     MInput.Base.Opacity = BaseColor.a;
-    MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(MaskMap) * _Metallic;
-    MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(MaskMap) * _Roughness;
-	
-    MInput.AO.AmbientOcclusion = LerpWhiteTo(GetMaterialAOFromMaskMap(MaskMap), _Occlusion);
-
+    MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(MaskMap);
+    MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(MaskMap);
+    MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(MaskMap);
     float4 NormalMap = SAMPLE_TEXTURE2D(_NormalMap, SamplerLinearRepeat, BaseMapUV);
     MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(NormalMap, _NormalScale);
-
     MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
-
+	// Distortion
+	MInput.Specular.Reflectance = _Reflectance;
+	MInput.Specular.IOR = _IOR;
+	MInput.Specular.RoughRefractionDepthOffset = _RoughRefractionDepthOffset;
+	// Transmission
     MInput.Transmission.Weight = _Weight;
-    
     float3 TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * _TransmissionColor.rgb;
     MInput.Transmission.SSSMFP = TransmittanceToMeanFreePath(TransmittanceColor, VOLUME_DEFAULT_THICKNESS_M);
     MInput.Transmission.SSSMFPScale = _MFPScale;
     MInput.Transmission.Thickness = SAMPLE_TEXTURE2D(_ThicknessMap, SamplerLinearRepeat, BaseMapUV).r * _Thickness;
     MInput.Transmission.SSSPhaseAniso = _PhaseAniso;
-
+	//
+	float2 ThinFilmUV = PixelIn.UV0;
+	MInput.ThinFilm.Thickness = SAMPLE_TEXTURE2D(_ThinFilmThicknessMap, SamplerLinearRepeat, ThinFilmUV).r * _ThinFilmThickness;
+	MInput.ThinFilm.Factor = SAMPLE_TEXTURE2D(_ThinFilmFactorMask, SamplerLinearRepeat, BaseMapUV).r * _ThinFilmFactor;
+	
     #if defined(USE_VERTEX_ATTR_CUSTOM_OUTPUT_DATA)
     // SSSMFPScale is a material params, it means color(1, 1, 1) trans through cur mat by this thick will turn to transmittance_color
     // so this place no need multi really object's thickness to SSSMFPScale
     // // todo, thickness may get from thickness map, this situation must transform from [0, 1] to world space thickness
     MInput.Transmission.Thickness *= PixelIn.CustomVertexData.r;
     #endif
-
-	MInput.Specular.IOR = 1.1;
 }
 
 // ===================================================================================================================
