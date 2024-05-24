@@ -27,6 +27,7 @@
 - _Weight
 - _TransmissionColorMap @TryInline(1)
 - _TransmissionColor
+- _TransmissionFlowColor
 - _ThicknessMap @TryInline(1)
 - _Thickness
 - _MFPScale
@@ -36,10 +37,11 @@
 - _ThinFilmThickness
 - _ThinFilmFactorMask @TryInline(1)
 - _ThinFilmFactor
-# Flow
+# Flow @Hide(_CustomOption0 == 0)
 - _FlowNormalMap @TryInline(0)
 - _FlowMatcap @TryInline(0)
 - _FlowIntensity
+- _FlowSpeed
 
 # Refraction @Hide(_Refraction == 0)
 - _IOR
@@ -69,6 +71,7 @@ _RoughnessRimPower ("Roughness Rim Power", Range(0, 2)) = 1
 _Weight ("Transmission Weight", Range(0, 1)) = 1
 _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
 [HDR] _TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
+[HDR] _TransmissionFlowColor ("Transmission Flow Color", Color) = (1, 1, 1, 1)
 _ThicknessMap ("Thickness Map", 2D) = "white" {}
 _Thickness ("Thickness", Range(0, 100)) = 1
 _MFPScale ("MFP Scale", Range(0.1, 100)) = 1
@@ -81,7 +84,8 @@ _ThinFilmFactor ("Thin Film Factor", Range(0, 2)) = 1
 // Flow
 _FlowNormalMap ("Flow Normal Map", 2D) = "white" {}
 _FlowMatcap ("Flow Matcap", 2D) = "white" {}
-_FlowIntensity ("Flow Intensity", Range(0, 5)) = 1
+_FlowIntensity ("Flow Intensity", Range(0, 3)) = 1
+_FlowSpeed ("Flow Speed", Range(0, 0.2)) = 0.1
 // Refraction
 _IOR ("IOR", Range(-3, 3)) = 1.5
 _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
@@ -99,6 +103,7 @@ _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
 #materialoption.UseSlab                   = Enable
 #materialoption.CustomSkyTransmission     = Enable
 #materialoption.ThinFilm				  = Enable
+#materialoption.CustomOption0.Flow        = OptionDisable
 
 // ===================================================================================================================
 
@@ -210,10 +215,14 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(NormalMap, _NormalScale);
     MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
 	// Flow
-	float3 PositionWS = PixelIn.PositionWS + float3(0, _Time.y * 0.2, _Time.y * 0.1); float3 NormalWS = PixelIn.GeometricNormalWS;
+	#if defined(MATERIAL_USE_FLOW)
+	float3 PositionWS = PixelIn.PositionWS + float3(0, _Time.y * _FlowSpeed * 2, _Time.y * _FlowSpeed * -1);
+	float3 NormalWS = PixelIn.GeometricNormalWS;
 	float3 FlowNoise = normalize(TriPlanarProjection(PositionWS, _FlowNormalMap, 1, float3(1, 1, 1))) * _FlowIntensity;
 	float3 FlowNormalWS = normalize(float4(NormalWS.x + FlowNoise.x, NormalWS.y + FlowNoise.y, NormalWS.z, 0));
 	float MatcapColor = SampleMatap(FlowNormalWS, _FlowMatcap).r;
+	#else
+	#endif
 	// float3 
 	// Distortion
 	MInput.Specular.Reflectance = _Reflectance;
@@ -221,11 +230,18 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	MInput.Specular.RoughRefractionDepthOffset = _RoughRefractionDepthOffset;
 	// Transmission
     MInput.Transmission.Weight = _Weight;
-    float3 TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * lerp(_TransmissionColor.rgb, float3(0, 0.5, 0), MatcapColor);
+	float3 TransmittanceColor;
+	
+	#if defined(MATERIAL_USE_FLOW)
+	TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * lerp(_TransmissionFlowColor.rgb, _TransmissionColor.rgb, MatcapColor);
+	#else
+	TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * _TransmissionColor.rgb;
+	#endif
+	
     MInput.Transmission.SSSMFP = TransmittanceToMeanFreePath(TransmittanceColor, VOLUME_DEFAULT_THICKNESS_M);
     MInput.Transmission.SSSMFPScale = _MFPScale;
     MInput.Transmission.Thickness = SAMPLE_TEXTURE2D(_ThicknessMap, SamplerLinearRepeat, BaseMapUV).r * _Thickness;
-    MInput.Transmission.SSSPhaseAniso = _PhaseAniso;
+    MInput.Transmission.SSSPhaseAniso = _PhaseAniso;// https://www.desmos.com/calculator/my4rjztv04
 	// Thin Film
 	float2 ThinFilmUV = PixelIn.UV0;
 	MInput.ThinFilm.Thickness = SAMPLE_TEXTURE2D(_ThinFilmThicknessMap, SamplerLinearRepeat, ThinFilmUV).r * _ThinFilmThickness;
@@ -237,10 +253,6 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     // todo, thickness may get from thickness map, this situation must transform from [0, 1] to world space thickness
     MInput.Transmission.Thickness *= PixelIn.CustomVertexData.r;
     #endif
-
-	#if defined(USE_DEBUG_MODE)
-	MInput.DebugCustomData.DebugCustomData0 = MatcapColor;
-	#endif
 }
 
 // ===================================================================================================================
