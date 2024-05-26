@@ -74,7 +74,7 @@ _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
 [HDR] _TransmissionFlowColor ("Transmission Flow Color", Color) = (1, 1, 1, 1)
 _ThicknessMap ("Thickness Map", 2D) = "white" {}
 _Thickness ("Thickness", Range(0, 100)) = 1
-_MFPScale ("MFP Scale", Range(0.1, 100)) = 1
+_MFPScale ("MFP Scale", Range(0.001, 100)) = 1
 _PhaseAniso ("Phase Aniso", Range(-1, 1)) = 0
 // ThinFilm
 _ThinFilmThicknessMap ("Thin Film Thickness Map", 2D) = "white" {}
