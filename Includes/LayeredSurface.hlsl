@@ -8,6 +8,17 @@
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonAntiTilling.hlsl"
 
+struct MaterialLayer
+{
+    Texture2D<float4> BaseMap;
+    float4 BaseColor;
+    Texture2D<float4> NormalMap;
+    float NormalScale;
+    Texture2D<float4> MaskMap;
+    float Reflectance;
+    float HeightOffset;
+};
+
 float2 HeightBlend(float WeightA, float HeightA, float WeightB, float HeightB, float Radius)
 {
     float MaxHeight = max(WeightA + HeightA, WeightB + HeightB) - Radius;
@@ -79,6 +90,26 @@ void BlendWithHeight(	Texture2D<float4> BaseMap,
     AmbientOcclusion = lerp(AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
     Height = lerp(Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
     Roughness = lerp(Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
+}
+void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float BlendMode, inout MInputType MInput )
+{
+    float4 BaseMapBlend = SAMPLE_TEXTURE2D(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
+    float4 NormalMapBlend = SAMPLE_TEXTURE2D(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
+    float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
+    float4 MaskMapBlend = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
+    
+    float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
+    // TODO(QP4B) A Better Height Blend Function ?
+    float2 BlendResult = HeightBlend(Weights.x, saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), Weights.y, MInput.Detail.Height, BlendRadius);
+    float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
+    
+    MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, HeightBlendMask);
+    MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, HeightBlendMask);
+    MInput.Specular.Reflectance = lerp(MInput.Specular.Reflectance, MLayer.Reflectance, HeightBlendMask);
+    MInput.Base.Metallic = lerp(MInput.Base.Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
 }
 void BlendWithHeight(	Texture2D<float4> BaseMap,
                         float4 BaseColor,
@@ -257,27 +288,46 @@ void SetupTilingLayer(    Texture2D<float4> BaseMap,
     Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
     Reflectance = Reflectance_Attribute;
 }
-void SetupTilingLayer(  Texture2D<float4> BaseMap,
-                        float3 BaseColor,
-                        Texture2D<float4> NormalMap,
-                        float NormalScale,
-                        Texture2D<float4> MaskMap,
-                        float Reflectance,
-                        float HeightOffset,
-                        float2 Coordinate,
-                        inout MInputType MInput
-                    )
+void SetupTilingLayer(MaterialLayer MLayer, float2 Coordinate, inout MInputType MInput)
 {
     // Modify Height
-    float4 Mask = SAMPLE_TEXTURE2D(MaskMap, SamplerLinearRepeat, Coordinate);
-    Mask.z = saturate(ModifyHeight(Mask.z, HeightOffset));
+    float4 Mask = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
+    Mask.z = saturate(ModifyHeight(Mask.z, MLayer.HeightOffset));
     // Fill
-    MInput.Base.Color = SAMPLE_TEXTURE2D(BaseMap, SamplerTriLinearRepeat, Coordinate).rgb * BaseColor.rgb;
-    MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(SAMPLE_TEXTURE2D(NormalMap, SamplerLinearRepeat, Coordinate), NormalScale);
+    MInput.Base.Color = SAMPLE_TEXTURE2D(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate).rgb * MLayer.BaseColor.rgb;
+    MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(SAMPLE_TEXTURE2D(MLayer.NormalMap, SamplerLinearRepeat, Coordinate), MLayer.NormalScale);
     MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(Mask);
     MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(Mask);
     MInput.Detail.Height = GetHeightFromMaskMap(Mask);
     MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
-    MInput.Specular.Reflectance = Reflectance;
+    MInput.Specular.Reflectance = MLayer.Reflectance;
+}
+void SetupMaterialLayer(    Texture2D<float4> BaseMap,
+                            float4 BaseColor,
+                            Texture2D<float4> NormalMap,
+                            float NormalScale,
+                            Texture2D<float4> MaskMap,
+                            float Reflectance,
+                            float HeightOffset,
+                            inout MaterialLayer MLayer
+                       )
+{
+    MLayer.BaseMap = BaseMap;
+    MLayer.BaseColor = BaseColor;
+    MLayer.NormalMap = NormalMap;
+    MLayer.NormalScale = NormalScale;
+    MLayer.MaskMap = MaskMap;
+    MLayer.Reflectance = Reflectance;
+    MLayer.HeightOffset = HeightOffset;
+}
+void SetupMInput(inout MInputType MInput)
+{
+    MInput.Base.Color = float3(0.5, 0.5, 0.5);
+    MInput.Base.Opacity = 1;
+    MInput.Base.Metallic = 0.5;
+    MInput.AO.AmbientOcclusion = 0.5;
+    MInput.Detail.Height = 0.5;
+    MInput.Base.Roughness = 0.5;
+    MInput.Specular.Reflectance = 0.5;
 }
 #endif

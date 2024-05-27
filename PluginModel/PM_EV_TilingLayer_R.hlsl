@@ -60,14 +60,14 @@ void PostProcessMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosD
     float4 BlendMask = MInput.PluginChannelData.Data0;
     BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
     float LocalScaleX = MInput.PluginChannelData.Data1.x;
-    float2 TilingLayer_2_Coordinate = PrepareTextureCoordinates(_TilingLayer_R_UVIndex, PixelIn);
+    float2 TilingLayer_R_Coordinate = PrepareTextureCoordinates(_TilingLayer_R_UVIndex, PixelIn);
     BlendWithHeight(	_TilingLayer_R_BaseMap,
                         _TilingLayer_R_BaseColor,
                         _TilingLayer_R_NormalMap,
                         _TilingLayer_R_NormalScale,
                         _TilingLayer_R_MaskMap,
                         _TilingLayer_R_Reflectance,
-                        TilingLayer_2_Coordinate * _TilingLayer_R_Tiling * (_TilingLayer_R_MatchScaling > FLT_EPS ? LocalScaleX : 1),
+                        TilingLayer_R_Coordinate * _TilingLayer_R_Tiling * (_TilingLayer_R_MatchScaling > FLT_EPS ? LocalScaleX : 1),
                         BlendMask.r,
                         _TilingLayer_R_BlendRadius,
                         _TilingLayer_R_HeightOffset,
