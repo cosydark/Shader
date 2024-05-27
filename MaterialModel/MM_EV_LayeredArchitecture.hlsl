@@ -45,7 +45,6 @@
 - _TilingLayer_R_BlendRadius
 
 # Tiling Layer (2U) (G) @Hide(_CustomEnum < 2)
-### CNMOHR
 - _TilingLayer_G_BaseMap @TryInline(1)
 - _TilingLayer_G_BaseColor
 - _TilingLayer_G_NormalMap @TryInline(1)
