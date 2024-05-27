@@ -34,7 +34,7 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
         public override string GetOwner() => "QP4B";
         public override string GetDesc() => "Layered Architecture In Editor";
         public override SurfaceShaderUsage GetUsage() => SurfaceShaderUsage.Environment;
-        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredArchitecture.shader";
+        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredArchitectureT.shader";
         protected override string GetMaterialModelName() => "EV_LayeredArchitecture";
         protected override string GetShadingModelName() => "SHADING_MODEL_STANDARD_PBR";
         protected override List<PluginModelDesc> InitPluginModelDescs() => new()
