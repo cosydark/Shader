@@ -257,4 +257,27 @@ void SetupTilingLayer(    Texture2D<float4> BaseMap,
     Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
     Reflectance = Reflectance_Attribute;
 }
+void SetupTilingLayer(  Texture2D<float4> BaseMap,
+                        float3 BaseColor,
+                        Texture2D<float4> NormalMap,
+                        float NormalScale,
+                        Texture2D<float4> MaskMap,
+                        float Reflectance,
+                        float HeightOffset,
+                        float2 Coordinate,
+                        inout MInputType MInput
+                    )
+{
+    // Modify Height
+    float4 Mask = SAMPLE_TEXTURE2D(MaskMap, SamplerLinearRepeat, Coordinate);
+    Mask.z = saturate(ModifyHeight(Mask.z, HeightOffset));
+    // Fill
+    MInput.Base.Color = SAMPLE_TEXTURE2D(BaseMap, SamplerTriLinearRepeat, Coordinate).rgb * BaseColor.rgb;
+    MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(SAMPLE_TEXTURE2D(NormalMap, SamplerLinearRepeat, Coordinate), NormalScale);
+    MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(Mask);
+    MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(Mask);
+    MInput.Detail.Height = GetHeightFromMaskMap(Mask);
+    MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
+    MInput.Specular.Reflectance = Reflectance;
+}
 #endif

@@ -5,16 +5,46 @@
 
 #stylesheet
 
-# Mask Layer @Hide(_CustomOption0 != 0)
+# Material Setting (1U)
 - _BlendMask @TryInline(0)
-- _UVIndex @Drawer(Enum, 0, 1)
+# Base Layer (1U)
+- _BaseLayer_BaseMap @TryInline(0)
+- _BaseLayer_NormalMap @TryInline(1)
+- _BaseLayer_NormalScale
+- _BaseLayer_MaskMap @TryInline(0)
+# Tiling Layer (2U)
+- _TilingLayer_BaseMap @TryInline(1)
+- _TilingLayer_BaseColor
+- _TilingLayer_NormalMap @TryInline(1)
+- _TilingLayer_NormalScale
+- _TilingLayer_MaskMap @TryInline(0)
+- _TilingLayer_Reflectance
+- _TilingLayer_HeightOffset
+###
+### Tiling Option
+- _TilingLayer_Tiling
+- _TilingLayer_MatchScaling @Drawer(Toggle)
 
 #endstylesheet
 
 
 #properties
 _BlendMask ("Blend Mask", 2D) = "black" {}
-_UVIndex ("UV Index", Int) = 0
+// Base Layer
+_BaseLayer_BaseMap ("Base Map", 2D) = "linearGrey" {}
+_BaseLayer_NormalMap ("Normal Map", 2D) = "bump" {}
+_BaseLayer_NormalScale ("Normal Scale", Range(0, 1)) = 1
+_BaseLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
+// Tiling Layer
+_TilingLayer_BaseMap ("Base Map", 2D) = "white" {}
+_TilingLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
+[Normal] _TilingLayer_NormalMap ("Normal Map", 2D) = "bump" {}
+_TilingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
+_TilingLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
+_TilingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+_TilingLayer_HeightOffset ("Height Offset", Range(-1, 1)) = 0
+_TilingLayer_Tiling ("Tiling", Float) = 1
+_TilingLayer_MatchScaling ("Match Scaling", Int) = 0
 #endproperties
 
 #materialoption.TangentSpaceNormalMap = Enable
@@ -26,7 +56,7 @@ _UVIndex ("UV Index", Int) = 0
 #materialoption.PostProcessMaterialInput  = Enable
 #materialoption.Emissive = Disable
 
-
+#materialoption.CustomEnum.LayerCount = (1 Layer, 2 Layer, 3 Layer)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
 
 #else
@@ -43,10 +73,9 @@ _UVIndex ("UV Index", Int) = 0
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
 	// Prepare UV
-	float2 MaskCoordinate = PrepareTextureCoordinates(_UVIndex, PixelIn);
+	float2 MaskCoordinate = PixelIn.UV0;
 	// Scale
 	float LocalScaleX = length(float3(GetObjectToWorldMatrix()[0].x, GetObjectToWorldMatrix()[1].x, GetObjectToWorldMatrix()[2].x));
-	MInput.PluginChannelData.Data1.x = LocalScaleX;
 	// Mask For Bend
 	float4 BlendMask = 0;
 	#if defined(MATERIAL_USE_USEVERTEXCOLOR)
@@ -67,6 +96,32 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	MInput.Detail.Height = GetHeightFromMaskMap(Mask);
 	MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
 	MInput.Specular.Reflectance = Reflectance;
+	// Tiling Layer
+	float2 TilingLayer_2_Coordinate = PixelIn.UV1 * _TilingLayer_Tiling * (_TilingLayer_MatchScaling > FLT_EPS ? LocalScaleX : 1);
+	SetupTilingLayer(	_TilingLayer_BaseMap,
+						_TilingLayer_BaseColor.rgb,
+						_TilingLayer_NormalMap,
+						_TilingLayer_NormalScale,
+						_TilingLayer_MaskMap,
+						_TilingLayer_Reflectance,
+						_TilingLayer_HeightOffset,
+						TilingLayer_2_Coordinate,
+						MInput.Base.Color,
+						MInput.TangentSpaceNormal.NormalTS,
+						MInput.Base.Metallic,
+						MInput.AO.AmbientOcclusion,
+						MInput.Detail.Height,
+						MInput.Base.Roughness,
+						MInput.Specular.Reflectance
+					);
+	// Base Layer
+	float2 BaseCoordinate = PixelIn.UV0;
+	float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_MaskMap, SamplerLinearRepeat, BaseCoordinate);
+	float4 NormalMap = SAMPLE_TEXTURE2D(_BaseLayer_NormalMap, SamplerLinearRepeat, BaseCoordinate);
+	float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_NormalScale);
+    
+	MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
+	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
 }
 
 //#materialoption.CustomizeVertexOutputData

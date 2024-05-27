@@ -12,7 +12,6 @@
 # Base Layer
 - _BaseMap @TryInline(1)
 - _BaseColor
-- _AlphaRimPower
 - _NormalMap @TryInline(1)
 - _NormalScale
 - _MaskMap @TryInline(0)
@@ -21,13 +20,11 @@
 - _Metallic
 - _Occlusion
 - _Roughness
-- _RoughnessRimPower
 - _Reflectance
 # Transmission Layer
 - _Weight
 - _TransmissionColorMap @TryInline(1)
 - _TransmissionColor
-- _TransmissionFlowColor
 - _ThicknessMap @TryInline(1)
 - _Thickness
 - _MFPScale
@@ -37,14 +34,23 @@
 - _ThinFilmThickness
 - _ThinFilmFactorMask @TryInline(1)
 - _ThinFilmFactor
+# Rim
+- _AlphaRimPower
+- _AlphaRimIntensity
+- _RoughnessRimPower
+- _RoughnessRimIntensity
+- _IORRimPower
+- _IORRimIntensity
 # Flow @Hide(_CustomOption0 == 0)
 - _FlowNormalMap @TryInline(0)
 - _FlowMatcap @TryInline(0)
 - _FlowIntensity
 - _FlowSpeed
+- _TransmissionFlowColor
 
 # Refraction @Hide(_Refraction == 0)
-- _IOR
+- _IORMap @TryInline(1)
+- _IORScale
 - _RoughRefractionDepthOffset
 
 #endstylesheet
@@ -65,13 +71,16 @@ _Occlusion ("Occlusion", Range(0, 1)) = 1
 _Roughness ("Roughness", Range(0, 1)) = 1
 _Reflectance ("Reflectance", Range(0, 1)) = 0.5
 // Rim
-_AlphaRimPower ("Alpha Rim Power", Range(0, 2)) = 1
-_RoughnessRimPower ("Roughness Rim Power", Range(0, 2)) = 1
+_AlphaRimPower ("Alpha Rim Power", Range(0, 3)) = 1
+_AlphaRimIntensity ("Alpha Rim Intensity", Range(1, 3)) = 1
+_RoughnessRimPower ("Roughness Rim Power", Range(0, 3)) = 1
+_RoughnessRimIntensity ("Roughness Rim Intensity", Range(1, 3)) = 1
+_IORRimPower ("IOR Rim Power", Range(0, 3)) = 1
+_IORRimIntensity ("IOR Rim Intensity", Range(1, 3)) = 1
 // Transmission
 _Weight ("Transmission Weight", Range(0, 1)) = 1
 _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
 [HDR] _TransmissionColor ("Transmission Color", Color) = (1, 1, 1, 1)
-[HDR] _TransmissionFlowColor ("Transmission Flow Color", Color) = (1, 1, 1, 1)
 _ThicknessMap ("Thickness Map", 2D) = "white" {}
 _Thickness ("Thickness", Range(0, 100)) = 1
 _MFPScale ("MFP Scale", Range(0.001, 100)) = 1
@@ -86,8 +95,10 @@ _FlowNormalMap ("Flow Normal Map", 2D) = "white" {}
 _FlowMatcap ("Flow Matcap", 2D) = "white" {}
 _FlowIntensity ("Flow Intensity", Range(0, 3)) = 1
 _FlowSpeed ("Flow Speed", Range(0, 0.2)) = 0.1
+[HDR] _TransmissionFlowColor ("Transmission Flow Color", Color) = (1, 1, 1, 1)
 // Refraction
-_IOR ("IOR", Range(-3, 3)) = 1.5
+_IORMap ("IOR Map", 2D) = "white" {}
+_IORScale ("IOR Map Scale", Range(0, 3)) = 0.1
 _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
 #endproperties
 
@@ -104,6 +115,7 @@ _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
 #materialoption.CustomSkyTransmission     = Enable
 #materialoption.ThinFilm				  = Enable
 #materialoption.CustomOption0.Flow        = OptionDisable
+#materialoption.CustomOption0.Rim         = OptionDisable
 
 // ===================================================================================================================
 
@@ -195,11 +207,18 @@ float3 SampleMatap(float3 NormalWS, Texture2D<float4> Tex)
 }
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
-	// Fresnel
+	// Fresnel And Rim
+	float AlphaRim = 0;
+	float RoughnessRim = 0;
+	float IORRim = 0;
+	#if defined(MATERIAL_USE_RIM)
 	PixelIn.GeometricNormalWS *= PixelIn.IsFrontFacing ? 1 : -1;
 	float NDotV = saturate(dot(PixelIn.GeometricNormalWS, PosData.CameraVectorWS));
-	float AlphaRim = _AlphaRimPower < 1.99 ? pow(1 - NDotV, _AlphaRimPower) : 0;
-	float RoughnessRim = _RoughnessRimPower < 1.99 ? pow(1 - NDotV, _RoughnessRimPower) : 0;
+	AlphaRim = _AlphaRimPower < 2.99 ? saturate(pow(1 - NDotV, _AlphaRimPower) * _AlphaRimIntensity) : 0;
+	RoughnessRim = _RoughnessRimPower < 2.99 ? saturate(pow(1 - NDotV, _RoughnessRimPower) * _RoughnessRimIntensity) : 0;
+	IORRim = _IORRimPower < 2.99 ? saturate(pow(1 - NDotV, _IORRimPower) * _IORRimIntensity) : 0;
+	#else
+	#endif
 	// Base
     float2 BaseMapUV = PixelIn.UV0;
     float4 BaseMap = SAMPLE_TEXTURE2D(_BaseMap, SamplerLinearRepeat, BaseMapUV);
@@ -223,10 +242,10 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float MatcapColor = SampleMatap(FlowNormalWS, _FlowMatcap).r;
 	#else
 	#endif
-	// float3 
 	// Distortion
+	float IOR = 1 + SAMPLE_TEXTURE2D(_IORMap, SamplerLinearRepeat, BaseMapUV) * _IORScale;
+	MInput.Specular.IOR = lerp(IOR, 1, IORRim);
 	MInput.Specular.Reflectance = _Reflectance;
-	MInput.Specular.IOR = _IOR;
 	MInput.Specular.RoughRefractionDepthOffset = _RoughRefractionDepthOffset;
 	// Transmission
     MInput.Transmission.Weight = _Weight;
