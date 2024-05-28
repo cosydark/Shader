@@ -91,17 +91,16 @@ void BlendWithHeight(	Texture2D<float4> BaseMap,
     Height = lerp(Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
     Roughness = lerp(Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
 }
-void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float BlendMode, inout MInputType MInput )
+void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float HeightLerp, inout MInputType MInput )
 {
     float4 BaseMapBlend = SAMPLE_TEXTURE2D(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
     float4 NormalMapBlend = SAMPLE_TEXTURE2D(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
-    
-    float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
+    float2 Weights = float2(IntensityMask, 1);
     // TODO(QP4B) A Better Height Blend Function ?
     float2 BlendResult = HeightBlend(Weights.x, saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), Weights.y, MInput.Detail.Height, BlendRadius);
-    float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
+    float HeightBlendMask = lerp(IntensityMask, BlendResult.x, HeightLerp);
     
     MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, HeightBlendMask);
     MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, HeightBlendMask);
