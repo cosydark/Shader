@@ -41,8 +41,8 @@
 - _TilingLayer_R_MaskContrast
 - _TilingLayer_R_MaskIntensity
 ### Blend Option
-- _TilingLayer_R_HeightLerp @Drawer(Toggle)
-- _TilingLayer_R_BlendRadius
+- _TilingLayer_R_BlendMode  @Drawer(Enum, Height Max, Height Min) @Hide(_CustomOption1 <= 0)
+- _TilingLayer_R_BlendRadius @Hide(_CustomOption1 <= 0)
 
 # Tiling Layer (2U) (G) @Hide(_CustomEnum < 2)
 - _TilingLayer_G_BaseMap @TryInline(1)
@@ -59,8 +59,8 @@
 - _TilingLayer_G_MaskContrast
 - _TilingLayer_G_MaskIntensity
 ### Blend Option
-- _TilingLayer_G_HeightLerp @Drawer(Toggle)
-- _TilingLayer_G_BlendRadius
+- _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_CustomOption1 <= 0)
+- _TilingLayer_G_BlendRadius @Hide(_CustomOption1 <= 0)
 #endstylesheet
 
 
@@ -91,7 +91,7 @@ _TilingLayer_R_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_R_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_R_Tiling ("Tiling", Float) = 1
 _TilingLayer_R_MatchScaling ("Match Scaling", Int) = 0
-_TilingLayer_R_HeightLerp ("Height Lerp", Float) = 0
+_TilingLayer_R_BlendMode ("Blend Mode", Float) = 1
 _TilingLayer_R_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _TilingLayer_R_MaskContrast ("Mask Contrast R", Float) = 1
 _TilingLayer_R_MaskIntensity ("Mask Intensity R", Float) = 1
@@ -105,7 +105,7 @@ _TilingLayer_G_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_G_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_G_Tiling ("Tiling", Float) = 1
 _TilingLayer_G_MatchScaling ("Match Scaling", Int) = 0
-_TilingLayer_G_HeightLerp ("Height Lerp", Float) = 0
+_TilingLayer_G_BlendMode ("Blend Mode", Float) = 1
 _TilingLayer_G_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _TilingLayer_G_MaskContrast ("Mask Contrast R", Float) = 1
 _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
@@ -122,6 +122,7 @@ _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 
 #materialoption.CustomEnum.LayerCount = (0_Layer, 1_Layer_R, 2_Layer_RG)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
+#materialoption.CustomOption1.UseHeightLerp = OptionEnable
 
 #else
 #include "./MM_EV_LayeredArchitecture.Header.hlsl"
@@ -142,11 +143,11 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float LocalScaleX = length(float3(GetObjectToWorldMatrix()[0].x, GetObjectToWorldMatrix()[1].x, GetObjectToWorldMatrix()[2].x));
 	// Mask For Bend
 	float4 BlendMask = 0;
-	#if defined(MATERIAL_USE_USEVERTEXCOLOR)
+#if defined(MATERIAL_USE_USEVERTEXCOLOR)
 	BlendMask = PixelIn.VertexColor;
-	#else
-	BlendMask = SAMPLE_TEXTURE2D_LOD(_BlendMask, SamplerTriLinearRepeat, MaskCoordinate, 0);
-	#endif
+#else
+	BlendMask = SAMPLE_TEXTURE2D(_BlendMask, SamplerTriLinearRepeat, MaskCoordinate);
+#endif
 	
 	// Setup MInput
 	SetupMInput(MInput);
@@ -165,7 +166,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	SetupTilingLayer(MLayer, TilingLayer_2_Coordinate, MInput);
 	
 	// Tiling Layer R
-	#if defined(MATERIAL_ENUM_LAYERCOUNT_1_LAYER_R) | defined(MATERIAL_ENUM_LAYERCOUNT_2_LAYER_RG) | defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB)
+#if defined(MATERIAL_ENUM_LAYERCOUNT_1_LAYER_R) | defined(MATERIAL_ENUM_LAYERCOUNT_2_LAYER_RG) | defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB)
 	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
 	float2 TilingLayer_R_Coordinate = PixelIn.UV1 * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
 	MaterialLayer MLayer_R;
@@ -178,11 +179,15 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_TilingLayer_R_HeightOffset,
 						MLayer_R
 						);
-	BlendWithHeight(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, _TilingLayer_R_BlendRadius, _TilingLayer_R_HeightLerp, MInput);
-	#endif
+#if defined(MATERIAL_USE_USEHEIGHTLERP)
+	BlendWithHeight(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, _TilingLayer_R_BlendRadius, _TilingLayer_R_BlendMode, MInput);
+#else
+	BlendWithOutHeight(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, MInput);
+#endif
+#endif
 
 	// Tiling Layer G
-	#if defined(MATERIAL_ENUM_LAYERCOUNT_2_LAYER_RG) | defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB)
+#if defined(MATERIAL_ENUM_LAYERCOUNT_2_LAYER_RG) | defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB)
 	BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
 	float2 TilingLayer_G_Coordinate = PixelIn.UV1 * _TilingLayer_G_Tiling * lerp(1, LocalScaleX, _TilingLayer_G_MatchScaling);
 	MaterialLayer MLayer_G;
@@ -195,8 +200,12 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_TilingLayer_G_HeightOffset,
 						MLayer_G
 						);
-	BlendWithHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_HeightLerp, MInput);
-	#endif
+#if defined(MATERIAL_USE_USEHEIGHTLERP)
+	BlendWithHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, MInput);
+#else
+	BlendWithOutHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, MInput);
+#endif
+#endif
 	// Base Layer
 	float2 BaseCoordinate = PixelIn.UV0;
 	float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_MaskMap, SamplerLinearRepeat, BaseCoordinate);
@@ -205,10 +214,6 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     
 	MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
 	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
-
-	#if defined(USE_DEBUG_MODE)
-	MInput.DebugCustomData.DebugCustomData0 = BlendMask;
-	#endif
 }
 
 //#materialoption.CustomizeVertexOutputData
