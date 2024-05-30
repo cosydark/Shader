@@ -22,7 +22,7 @@
 - _TilingLayer_MaskMap @TryInline(0)
 - _TilingLayer_Reflectance
 - _TilingLayer_HeightOffset
-### Tiling Option
+### Tiling Setting
 - _TilingLayer_Tiling
 - _TilingLayer_MatchScaling @Drawer(Toggle)
 
@@ -34,13 +34,13 @@
 - _TilingLayer_R_MaskMap @TryInline(0)
 - _TilingLayer_R_Reflectance
 - _TilingLayer_R_HeightOffset
-### Tiling Option
+### Tiling Setting
 - _TilingLayer_R_Tiling
 - _TilingLayer_R_MatchScaling @Drawer(Toggle)
-### Mask Filter
+### Mask Setting
 - _TilingLayer_R_MaskContrast
 - _TilingLayer_R_MaskIntensity
-### Blend Option
+### Blend Setting
 - _TilingLayer_R_BlendMode  @Drawer(Enum, Height Max, Height Min) @Hide(_CustomOption1 <= 0)
 - _TilingLayer_R_BlendRadius @Hide(_CustomOption1 <= 0)
 
@@ -52,13 +52,13 @@
 - _TilingLayer_G_MaskMap @TryInline(0)
 - _TilingLayer_G_Reflectance
 - _TilingLayer_G_HeightOffset
-### Tiling Option
+### Tiling Setting
 - _TilingLayer_G_Tiling
 - _TilingLayer_G_MatchScaling @Drawer(Toggle)
-### Mask Filter
+### Mask Setting
 - _TilingLayer_G_MaskContrast
 - _TilingLayer_G_MaskIntensity
-### Blend Option
+### Blend Setting
 - _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_CustomOption1 <= 0)
 - _TilingLayer_G_BlendRadius @Hide(_CustomOption1 <= 0)
 #endstylesheet
@@ -69,7 +69,7 @@ _BlendMask ("Blend Mask", 2D) = "black" {}
 // Base Layer
 _BaseLayer_BaseMap ("Base Map", 2D) = "linearGrey" {}
 _BaseLayer_NormalMap ("Normal Map", 2D) = "bump" {}
-_BaseLayer_NormalScale ("Normal Scale", Range(0, 1)) = 1
+_BaseLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _BaseLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 // Tiling Layer
 _TilingLayer_BaseMap ("Base Map", 2D) = "white" {}
