@@ -14,6 +14,9 @@
 - _BaseColor
 - _NormalMap @TryInline(1)
 - _NormalScale
+- _DetailNormalMap @TryInline(1)
+- _DetailNormalScale
+- _DetailNormalTiling
 - _MaskMap @TryInline(0)
 - _EmissiveMap @TryInline(1)
 - _EmissiveColor
@@ -34,19 +37,22 @@
 - _ThinFilmThickness
 - _ThinFilmFactorMask @TryInline(1)
 - _ThinFilmFactor
-# Rim
+# Rim @Hide(_CustomOption1 == 0)
 - _AlphaRimPower
 - _AlphaRimIntensity
 - _RoughnessRimPower
 - _RoughnessRimIntensity
 - _IORRimPower
 - _IORRimIntensity
+- _HGRimPower
+- _HGRimIntensity
 # Flow @Hide(_CustomOption0 == 0)
-- _FlowNormalMap @TryInline(0)
+- _FlowNoiseMap @TryInline(0)
 - _FlowMatcap @TryInline(0)
 - _FlowIntensity
 - _FlowSpeed
-- _TransmissionFlowColor
+- _FlowNoiseTiling
+- _EmissiveFlowColor
 
 # Refraction @Hide(_Refraction == 0)
 - _IORMap @TryInline(1)
@@ -61,9 +67,12 @@
 // Base Layer
 _BaseMap ("Base Map", 2D) = "white" {}
 [HDR] _BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-[Normal] _NormalMap ("Normal Map", 2D) = "bump" {} // Tangent Space NormalMap
+[Normal] _NormalMap ("Normal Map", 2D) = "bump" {}
 _NormalScale ("Normal Scale", Range(0, 2)) = 1
-_MaskMap ("MaskMap (MOHR)", 2D) = "linearGrey" {} // R Metallic, G Occlusion, B Curvature, A Roughness
+[Normal] _DetailNormalMap ("Detail Normal Map", 2D) = "bump" {}
+_DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
+_DetailNormalTiling ("Detail Normal Tiling", Float) = 1
+_MaskMap ("MaskMap (MOHR)", 2D) = "linearGrey" {}
 _EmissiveMap ("Emissive Map", 2D) = "white" {}
 [HDR] _EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
 _Metallic ("Metallic", Range(0, 1)) = 0
@@ -77,6 +86,8 @@ _RoughnessRimPower ("Roughness Rim Power", Range(0, 3)) = 1
 _RoughnessRimIntensity ("Roughness Rim Intensity", Range(1, 3)) = 1
 _IORRimPower ("IOR Rim Power", Range(0, 3)) = 1
 _IORRimIntensity ("IOR Rim Intensity", Range(1, 3)) = 1
+_HGRimPower ("HG Rim Power", Range(0, 3)) = 2.8
+_HGRimIntensity ("HG Rim Intensity", Range(1, 3)) = 2
 // Transmission
 _Weight ("Transmission Weight", Range(0, 1)) = 1
 _TransmissionColorMap ("Transmission Color Map", 2D) = "white" {}
@@ -91,11 +102,12 @@ _ThinFilmThickness ("Thin Film Thickness", Range(0, 1)) = 0.27
 _ThinFilmFactorMask ("Thin Film Factor Mask", 2D) = "white" {}
 _ThinFilmFactor ("Thin Film Factor", Range(0, 2)) = 1
 // Flow
-_FlowNormalMap ("Flow Normal Map", 2D) = "white" {}
+_FlowNoiseMap ("Flow Noise Map", 2D) = "white" {}
 _FlowMatcap ("Flow Matcap", 2D) = "white" {}
 _FlowIntensity ("Flow Intensity", Range(0, 3)) = 1
 _FlowSpeed ("Flow Speed", Range(0, 0.2)) = 0.1
-[HDR] _TransmissionFlowColor ("Transmission Flow Color", Color) = (1, 1, 1, 1)
+_FlowNoiseTiling ("Flow NoiseTiling", Range(1, 5)) = 1
+[HDR] _EmissiveFlowColor ("Emissive Flow Color", Color) = (1, 1, 1, 1)
 // Refraction
 _IORMap ("IOR Map", 2D) = "white" {}
 _IORScale ("IOR Map Scale", Range(0, 3)) = 0.1
@@ -115,7 +127,7 @@ _RoughRefractionDepthOffset ("Rough Refraction Depth Offset", Range(-3, 3)) = 0
 #materialoption.CustomSkyTransmission     = Enable
 #materialoption.ThinFilm				  = Enable
 #materialoption.CustomOption0.Flow        = OptionDisable
-#materialoption.CustomOption0.Rim         = OptionDisable
+#materialoption.CustomOption1.Rim         = OptionDisable
 
 // ===================================================================================================================
 
@@ -205,18 +217,27 @@ float3 SampleMatap(float3 NormalWS, Texture2D<float4> Tex)
 	float2 Coordinate = mul(GetWorldToViewMatrix(), NormalWS).xy * 0.5 + 0.5;
 	return SAMPLE_TEXTURE2D(Tex, SamplerLinearRepeat, Coordinate).xyz;
 }
+float3 BlendAngelCorrectedNormals(float3 BaseNormal, float3 AdditionalNormal)
+{
+	float3 Temp_0 = float3(BaseNormal.xy, BaseNormal.z + 1);
+	float3 Temp_1 = float3(-AdditionalNormal.xy, AdditionalNormal.z);
+	float3 Temp_2 = dot(Temp_0, Temp_1);
+	return normalize(Temp_0 * Temp_2 - Temp_1 * Temp_2);
+}
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
 	// Fresnel And Rim
 	float AlphaRim = 0;
 	float RoughnessRim = 0;
 	float IORRim = 0;
+	float EmissiveRim = 0;
 	#if defined(MATERIAL_USE_RIM)
 	PixelIn.GeometricNormalWS *= PixelIn.IsFrontFacing ? 1 : -1;
 	float NDotV = saturate(dot(PixelIn.GeometricNormalWS, PosData.CameraVectorWS));
 	AlphaRim = _AlphaRimPower < 2.99 ? saturate(pow(1 - NDotV, _AlphaRimPower) * _AlphaRimIntensity) : 0;
 	RoughnessRim = _RoughnessRimPower < 2.99 ? saturate(pow(1 - NDotV, _RoughnessRimPower) * _RoughnessRimIntensity) : 0;
 	IORRim = _IORRimPower < 2.99 ? saturate(pow(1 - NDotV, _IORRimPower) * _IORRimIntensity) : 0;
+	EmissiveRim = _HGRimPower < 2.99 ? saturate(pow(1 - NDotV, _HGRimPower) * _HGRimIntensity) : 0;
 	#else
 	#endif
 	// Base
@@ -231,13 +252,14 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	MInput.AO.AmbientOcclusion = LerpWhiteTo(GetMaterialAOFromMaskMap(MaskMap), _Occlusion);
 
     float4 NormalMap = SAMPLE_TEXTURE2D(_NormalMap, SamplerLinearRepeat, BaseMapUV);
-    MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(NormalMap, _NormalScale);
+    float4 DetailNormalMap = SAMPLE_TEXTURE2D(_DetailNormalMap, SamplerLinearRepeat, BaseMapUV * _DetailNormalTiling);
+    MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(GetNormalTSFromNormalTex(NormalMap, _NormalScale), GetNormalTSFromNormalTex(DetailNormalMap, _DetailNormalScale));
     MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
 	// Flow
 	#if defined(MATERIAL_USE_FLOW)
-	float3 PositionWS = PixelIn.PositionWS + float3(0, _Time.y * _FlowSpeed * 2, _Time.y * _FlowSpeed * -1);
+	float3 PositionWS = PixelIn.PositionWS * _FlowNoiseTiling + float3(0, _Time.y * _FlowSpeed * 2, _Time.y * _FlowSpeed * -1);
 	float3 NormalWS = PixelIn.GeometricNormalWS;
-	float3 FlowNoise = normalize(TriPlanarProjection(PositionWS, _FlowNormalMap, 1, float3(1, 1, 1))) * _FlowIntensity;
+	float3 FlowNoise = normalize(TriPlanarProjection(PositionWS, _FlowNoiseMap, 1, float3(1, 1, 1))) * _FlowIntensity;
 	float3 FlowNormalWS = normalize(float4(NormalWS.x + FlowNoise.x, NormalWS.y + FlowNoise.y, NormalWS.z, 0));
 	float MatcapColor = SampleMatap(FlowNormalWS, _FlowMatcap).r;
 	#else
@@ -252,15 +274,16 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float3 TransmittanceColor;
 	
 	#if defined(MATERIAL_USE_FLOW)
-	TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * lerp(_TransmissionFlowColor.rgb, _TransmissionColor.rgb, MatcapColor);
+	MInput.Emission.Color += MatcapColor * _EmissiveFlowColor.rgb;
 	#else
-	TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * _TransmissionColor.rgb;
 	#endif
 	
+	TransmittanceColor = SAMPLE_TEXTURE2D(_TransmissionColorMap, SamplerLinearRepeat, BaseMapUV).rgb * _TransmissionColor.rgb;
     MInput.Transmission.SSSMFP = TransmittanceToMeanFreePath(TransmittanceColor, VOLUME_DEFAULT_THICKNESS_M);
     MInput.Transmission.SSSMFPScale = _MFPScale;
     MInput.Transmission.Thickness = SAMPLE_TEXTURE2D(_ThicknessMap, SamplerLinearRepeat, BaseMapUV).r * _Thickness;
-    MInput.Transmission.SSSPhaseAniso = _PhaseAniso;// https://www.desmos.com/calculator/my4rjztv04
+	// Trick
+    MInput.Transmission.SSSPhaseAniso = lerp(_PhaseAniso, 0, EmissiveRim);// https://www.desmos.com/calculator/my4rjztv04
 	// Thin Film
 	float2 ThinFilmUV = PixelIn.UV0;
 	MInput.ThinFilm.Thickness = SAMPLE_TEXTURE2D(_ThinFilmThicknessMap, SamplerLinearRepeat, ThinFilmUV).r * _ThinFilmThickness;

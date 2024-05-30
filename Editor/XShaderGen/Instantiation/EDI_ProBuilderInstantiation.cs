@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 #if XRP_SHADER_INSTANTIATION_META
 {
-    "ClassName": "EV_LayeredRock",
-    "Name": "XRender/Environment/LayeredSurfaceVariantII",
-    "OutputPath": "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredRock.shader",
-    "MM": "EV_LayeredRock",
+    "ClassName": "EDI_ProBuilderShader",
+    "Name": "XRender/Editor/ProBuilder",
+    "OutputPath": "Assets/Res/Shader/SurfaceShaderLibrary/EDI_ProBuilder.shader",
+    "MM": "ProBuilder",
     "SM": "SHADING_MODEL_STANDARD_PBR",
     "Owner": "QP4B",
-    "Usage": "Environment",
-    "Desc": "HeightBlendTest",
+    "Usage": "Editor",
+    "Desc": "Shader For ProBuilder",
     "PMs": [],
     "Config": [
         "SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Option)",
@@ -28,18 +28,18 @@ using UnityEngine;
 namespace UnityEditor.XRender.XShaderGen.Instantiation
 {
     [SurfaceShaderInstantiationAttribute]
-    public class EV_LayeredRock : XSurfaceShader
+    public class EDI_ProBuilderShader : XSurfaceShader
     {
-        public override string GetName() => "XRender/Environment/EV_LayeredRock";
+        public override string GetName() => "XRender/Editor/ProBuilder";
         public override string GetOwner() => "QP4B";
-        public override string GetDesc() => "Layered Rock In Editor";
+        public override string GetDesc() => "Shader For ProBuilder";
         public override SurfaceShaderUsage GetUsage() => SurfaceShaderUsage.Environment;
-        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredRock.shader";
-        protected override string GetMaterialModelName() => "EV_LayeredRock";
+        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/EDI_ProBuilder.shader";
+        protected override string GetMaterialModelName() => "ProBuilder";
         protected override string GetShadingModelName() => "SHADING_MODEL_STANDARD_PBR";
         protected override List<PluginModelDesc> InitPluginModelDescs() => new()
         {
-            new PluginModelDesc {name = "TilingLayer", needMultiCompile = true},
+            // new PluginModelDesc {name = "DefaultPluginModel", needMultiCompile = false},
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {
@@ -52,8 +52,10 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
             config.SetOptionTransparentZWrite(ShaderOptionFlag.AlwaysDisable);
             config.SetOptionRefraction(ShaderOptionFlag.AlwaysDisable);
             config.SetSupportDotsInstancing(true);
+            config.SetOptionSupportDecal(ShaderOptionFlag.AlwaysDisable);
+            config.SetOptionDecalLayer(SurfaceShaderConfig.DecalLayer.Layer1);
         }
     }
 }
-//ss:[[-1516735531]]
+//ss:[[1339071361]]
 

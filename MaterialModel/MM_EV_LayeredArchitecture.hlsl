@@ -208,7 +208,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 #endif
 #endif
 	
-	// Base Layer
+	// Base Layerlayered
 #if defined(MATERIAL_USE_USEBASELAYER)
 	float2 BaseCoordinate = PixelIn.UV0;
 	float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_MaskMap, SamplerLinearRepeat, BaseCoordinate);

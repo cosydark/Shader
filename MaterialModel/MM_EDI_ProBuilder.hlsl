@@ -1,73 +1,51 @@
 #ifdef MM_HEADER
 #attribute Material.Author = "QP4B"
-#attribute Material.Name = "EV_LayeredRock"
+#attribute Material.Name = "ProBuilder"
 #attribute Material.ShadingModel = "DefaultLit"
 
 #stylesheet
-
-# Mask Layer @Hide(_CustomOption0 != 0)
-- _BlendMask @TryInline(0)
-- _UVIndex @Drawer(Enum, 0, 1)
+# Base Layer
+- _Metallic
+- _Roughness
+- _Reflectance
 
 #endstylesheet
 
 
 #properties
-_BlendMask ("Blend Mask", 2D) = "black" {}
-_UVIndex ("UV Index", Int) = 0
+_Metallic ("Metallic", Range(0, 1)) = 0
+_Roughness ("Roughness", Range(0, 1)) = 1
+_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 #endproperties
 
 #materialoption.TangentSpaceNormalMap = Enable
 #materialoption.AmbientOcclusion = Enable
+#materialoption.Emissive = Enable
 #materialoption.Reflectance = Enable
 #materialoption.Detail = Enable
+#propertyoption.GenST = _BaseMap
 #materialoption.UseSlab = Enable
-#materialoption.UseUV1 = Enable
-#materialoption.PostProcessMaterialInput  = Enable
-#materialoption.Emissive = Disable
-// #materialoption.Deferred = Enable
 
-#materialoption.CustomEnum.LayerCount = (0_Layer, 1_Layer_R, 2_Layer_RG, 3_Layer_RGB)
-#materialoption.CustomOption0.UseVertexColor = OptionEnable
 
 #else
-#include "./MM_EV_LayeredRock.Header.hlsl"
+#include "./MM_EDI_ProBuilder.Header.hlsl"
 #endif
 
 #include "Packages/com.funplus.xrender/Shaders/Library/Common.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonHeader.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
-#include "Packages/com.funplus.xrender/Shaders/Library/CommonAntiTilling.hlsl"
-#include "Assets/Res/Shader/Includes/LayeredSurface.hlsl"
-
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
 {
-	// Prepare UV
-	float2 MaskCoordinate = PrepareTextureCoordinates(_UVIndex, PixelIn);
-	// Scale
-	float LocalScaleX = length(float3(GetObjectToWorldMatrix()[0].x, GetObjectToWorldMatrix()[1].x, GetObjectToWorldMatrix()[2].x));
-	MInput.PluginChannelData.Data1.x = LocalScaleX;
-	// Mask For Bend
-	float4 BlendMask = 0;
-	#if defined(MATERIAL_USE_USEVERTEXCOLOR)
-	BlendMask = PixelIn.VertexColor;
-	#else
-	BlendMask = SAMPLE_TEXTURE2D(_BlendMask, SamplerTriLinearRepeat, MaskCoordinate);
-	#endif
-	MInput.PluginChannelData.Data0 = BlendMask;
-	// Setup Values
-	float3 Color = float3(0, 0, 0);
-	float4 Mask = float4(0, 1, 0.5, 0.4);
-	float Reflectance = 0.5;
-	// Fill
-	MInput.Base.Color = Color;
+	MInput.Base.Color = PixelIn.VertexColor;
 	MInput.Base.Opacity = 1;
-	MInput.Base.Metallic = 0;
-	MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(Mask);
-	MInput.Detail.Height = GetHeightFromMaskMap(Mask);
-	MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
-	MInput.Specular.Reflectance = Reflectance;
+	MInput.Base.Metallic = _Metallic;
+	MInput.Base.Roughness = _Roughness;
+	MInput.Detail.Height = 0.5;
+	MInput.AO.AmbientOcclusion = 1;
+	MInput.Specular.Reflectance = _Reflectance;
+	MInput.Emission.Color = float3(0, 0, 0);
+	MInput.TangentSpaceNormal.NormalTS = float3(0, 0, 1);
 }
 
 //#materialoption.CustomizeVertexOutputData
