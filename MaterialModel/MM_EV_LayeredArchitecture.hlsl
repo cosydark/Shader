@@ -8,7 +8,7 @@
 # Material Setting (1U) @Hide(_CustomOption0 != 0)
 - _BlendMask @TryInline(0)
 
-# Base Layer (1U)
+# Base Layer (1U) @Hide(_CustomOption2 == 0)
 - _BaseLayer_BaseMap @TryInline(0)
 - _BaseLayer_NormalMap @TryInline(1)
 - _BaseLayer_NormalScale
@@ -123,6 +123,7 @@ _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 #materialoption.CustomEnum.LayerCount = (0_Layer, 1_Layer_R, 2_Layer_RG)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
 #materialoption.CustomOption1.UseHeightLerp = OptionEnable
+#materialoption.CustomOption2.UseBaseLayer = OptionEnable
 
 #else
 #include "./MM_EV_LayeredArchitecture.Header.hlsl"
@@ -206,14 +207,17 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	BlendWithOutHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, MInput);
 #endif
 #endif
+	
 	// Base Layer
+#if defined(MATERIAL_USE_USEBASELAYER)
 	float2 BaseCoordinate = PixelIn.UV0;
 	float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_MaskMap, SamplerLinearRepeat, BaseCoordinate);
 	float4 NormalMap = SAMPLE_TEXTURE2D(_BaseLayer_NormalMap, SamplerLinearRepeat, BaseCoordinate);
 	float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_NormalScale);
-    
 	MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
 	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
+#else
+#endif
 }
 
 //#materialoption.CustomizeVertexOutputData
