@@ -62,7 +62,7 @@
 - _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_CustomOption1 <= 0)
 - _TilingLayer_G_BlendRadius @Hide(_CustomOption1 <= 0)
 
-# Additional Layer (2U) (B)
+# Additional Layer (2U) (B) @Hide(_CustomOption1 == 0)
 - _AdditionalLayer_BaseColor
 - _AdditionalLayer_NormalScale
 - _AdditionalLayer_AmbientOcclusion
@@ -75,6 +75,16 @@
 ### Blend Setting
 - _AdditionalLayer_BlendMode @Drawer(Enum, Height Max, Height Min)
 - _AdditionalLayer_BlendRadius
+
+# Detail Layer (2U) @Hide(_CustomOption2 == 0)
+- _Detail_BaseMap @TryInline(0)
+- _Detail_NormalMap @TryInline(1)
+- _Detail_NormalScale
+- _Detail_MaskMap @TryInline(0)
+- _Detail_AmbientOcclusion
+- _Detail_AlbedoGrayValue
+
+
 #endstylesheet
 
 
@@ -133,6 +143,13 @@ _AdditionalLayer_BlendMode ("Blend Mode", Float) = 1
 _AdditionalLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _AdditionalLayer_MaskContrast ("Mask Contrast R", Float) = 1
 _AdditionalLayer_MaskIntensity ("Mask Intensity R", Float) = 1
+// Detail Layer
+_Detail_BaseMap ("Base Map", 2D) = "white" {}
+_Detail_NormalMap ("Normal Map", 2D) = "bump" {}
+_Detail_NormalScale ("Normal Scale", Range(0, 2)) = 1
+_Detail_MaskMap ("Mask Map (MOHR)", 2D) = "black" {}
+_Detail_AmbientOcclusion ("AmbientOcclusion", Range(0, 1)) = 1
+_Detail_AlbedoGrayValue ("Albedo GrayValue", Range(0, 1)) = 1
 #endproperties
 
 #materialoption.TangentSpaceNormalMap = Enable
@@ -145,8 +162,10 @@ _AdditionalLayer_MaskIntensity ("Mask Intensity R", Float) = 1
 #materialoption.Emissive = Disable
 // #materialoption.Deferred = Enable
 
-#materialoption.CustomEnum.LayerCount = (0_Layer, 1_Layer_R, 2_Layer_RG, 3_Layer_RGB)
+#materialoption.CustomEnum.LayerCount = (0_Layer, 1_Layer_R, 2_Layer_RG)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
+#materialoption.CustomOption1.UseAdditionalLayer = OptionDisable
+#materialoption.CustomOption2.UseDetailLayer = OptionDisable
 
 #else
 #include "./MM_EV_LayeredRock.Header.hlsl"
@@ -220,7 +239,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	BlendWithHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, MInput);
 #endif
 	// Additional Layer B
-#if defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB) | 1
+#if defined(MATERIAL_USE_USEADDITIONALLAYER)
 	BlendMask.b = saturate(pow(BlendMask.b, _AdditionalLayer_MaskContrast) * _AdditionalLayer_MaskIntensity);
 	SimpleMaterialLayer SMLayer_B;
 	SetupSMaterialLayer(	_AdditionalLayer_BaseColor,
@@ -230,6 +249,10 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 							SMLayer_B
 						);
 	BlendWithHeightNoTexture(SMLayer_B, BlendMask.b, _AdditionalLayer_BlendRadius, _AdditionalLayer_BlendMode, MInput);
+#endif
+
+#if defined(MATERIAL_USE_USEDETAILLAYER)|1
+	
 #endif
 	// Base Layer
 	float2 BaseCoordinate = PixelIn.UV0;

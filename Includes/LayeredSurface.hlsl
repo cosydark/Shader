@@ -25,6 +25,14 @@ struct SimpleMaterialLayer
     float NormalScale;
     float Reflectance;
 };
+struct DetailLayer
+{
+    Texture2D<float4> BaseMap;
+    Texture2D<float4> NormalMap;
+    float NormalScale;
+    Texture2D<float4> MaskMap;
+    
+};
 
 float2 HeightBlend(float WeightA, float HeightA, float WeightB, float HeightB, float Radius)
 {
@@ -366,6 +374,17 @@ void SetupSMaterialLayer(   float4 BaseColor,
     SMLayer.NormalScale = NormalScale;
     SMLayer.Mask = Mask;
     SMLayer.Reflectance = Reflectance;
+}
+void SetupDetailLayer(  Texture2D<float4> BaseMap,
+                        Texture2D<float4> NormalMap,
+                        float NormalScale,
+                        Texture2D<float4> MaskMap,
+                        float AmbientOcclusion,
+                        float AlbedoGrayValue,
+                        inout DetailLayer SMLayer
+                     )
+{
+    
 }
 void SetupMInput(inout MInputType MInput)
 {
