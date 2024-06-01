@@ -31,9 +31,14 @@ struct DetailLayer
     Texture2D<float4> NormalMap;
     float NormalScale;
     Texture2D<float4> MaskMap;
-    
+    float AmbientOcclusion;
+    float AlbedoGrayValue;
 };
-
+float DetailLuminance(float3 LinearRgb)
+{
+    return dot(LinearRgb, float3(0.2126729, 0.7151522, 0.0721750));
+}
+// TODO(QP4B) A Better Height Blend Function ?
 float2 HeightBlend(float WeightA, float HeightA, float WeightB, float HeightB, float Radius)
 {
     float MaxHeight = max(WeightA + HeightA, WeightB + HeightB) - Radius;
@@ -83,7 +88,7 @@ void BlendWithHeight(	Texture2D<float4> BaseMap,
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MaskMap, SamplerLinearRepeat, Coordinate);
 	
     float HeightBlendMask;
-    // TODO(QP4B) A Better Height Blend Function ?
+    
     BRANCH
     switch (BlendMode)
     {
@@ -114,7 +119,27 @@ void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMas
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
     
     float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
-    // TODO(QP4B) A Better Height Blend Function ?
+    
+    float2 BlendResult = HeightBlend(Weights.x, saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), Weights.y, MInput.Detail.Height, BlendRadius);
+    float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
+    
+    MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, HeightBlendMask);
+    MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, HeightBlendMask);
+    MInput.Specular.Reflectance = lerp(MInput.Specular.Reflectance, MLayer.Reflectance, HeightBlendMask);
+    MInput.Base.Metallic = lerp(MInput.Base.Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
+}
+void BlendWithHeight_HexTilling(MaterialLayer MLayer, float2 Coordinate, float4 HexTilingInfo, float IntensityMask, float BlendRadius, float BlendMode, inout MInputType MInput )
+{
+    float4 BaseMapBlend = SampleTexture2DHex(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate, HexTilingInfo.x, HexTilingInfo.y, HexTilingInfo.z, HexTilingInfo.w) * MLayer.BaseColor;
+    float4 NormalMapBlend = SampleTexture2DHex(MLayer.NormalMap, SamplerLinearRepeat, Coordinate, HexTilingInfo.x, HexTilingInfo.y, HexTilingInfo.z, HexTilingInfo.w);
+    float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
+    float4 MaskMapBlend = SampleTexture2DHex(MLayer.MaskMap, SamplerLinearRepeat, Coordinate, HexTilingInfo.x, HexTilingInfo.y, HexTilingInfo.z, HexTilingInfo.w);
+    
+    float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
+    
     float2 BlendResult = HeightBlend(Weights.x, saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), Weights.y, MInput.Detail.Height, BlendRadius);
     float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
     
@@ -148,7 +173,6 @@ void BlendWithHeightNoTexture(SimpleMaterialLayer SMLayer, float IntensityMask, 
     float4 MaskMapBlend = SMLayer.Mask;
     
     float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
-    // TODO(QP4B) A Better Height Blend Function ?
     float2 BlendResult = HeightBlend(Weights.x, GetHeightFromMaskMap(MaskMapBlend), Weights.y, MInput.Detail.Height, BlendRadius);
     float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
 
@@ -161,6 +185,17 @@ void BlendWithHeightNoTexture(SimpleMaterialLayer SMLayer, float IntensityMask, 
     // MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
     // MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
     MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
+}
+void BlendDetailLayer(DetailLayer DLayer, float2 Coordinate, inout MInputType MInput)
+{
+    float BaseMapAlbedoGrayValue = DetailLuminance(SAMPLE_TEXTURE2D(DLayer.BaseMap, SamplerTriLinearRepeat, Coordinate));
+    float4 NormalMapBlend = SAMPLE_TEXTURE2D(DLayer.NormalMap, SamplerLinearRepeat, Coordinate);
+    float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, DLayer.NormalScale);
+    float4 MaskMapBlend = SAMPLE_TEXTURE2D(DLayer.MaskMap, SamplerLinearRepeat, Coordinate);
+    
+    MInput.Base.Color *= lerp(1, BaseMapAlbedoGrayValue, DLayer.AlbedoGrayValue);
+    MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(MInput.TangentSpaceNormal.NormalTS, NormalBlend);
+    MInput.AO.AmbientOcclusion = min(MInput.AO.AmbientOcclusion, lerp(1, GetMaterialAOFromMaskMap(MaskMapBlend), DLayer.AmbientOcclusion));
 }
 void BlendWithHeight(	Texture2D<float4> BaseMap,
                         float4 BaseColor,
@@ -189,7 +224,7 @@ void BlendWithHeight(	Texture2D<float4> BaseMap,
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MaskMap, SamplerLinearRepeat, Coordinate);
 	
     float HeightBlendMask;
-    // TODO(QP4B) A Better Height Blend Function ?
+    
     BRANCH
     switch (BlendMode)
     {
@@ -237,7 +272,7 @@ void BlendWithHeightNoTexture(	float4 Color_Attribute,
     float4 MaskMapBlend = float4(Metallic_Attribute, AmbientOcclusion_Attribute, Height_Attribute, Roughness_Attribute);
 	
     float HeightBlendMask;
-    // TODO(QP4B) A Better Height Blend Function ?
+    
     BRANCH
     switch (BlendMode)
     {
@@ -384,7 +419,12 @@ void SetupDetailLayer(  Texture2D<float4> BaseMap,
                         inout DetailLayer SMLayer
                      )
 {
-    
+    SMLayer.BaseMap = BaseMap;
+    SMLayer.NormalMap = NormalMap;
+    SMLayer.NormalScale = NormalScale;
+    SMLayer.MaskMap = MaskMap;
+    SMLayer.AmbientOcclusion = AmbientOcclusion;
+    SMLayer.AlbedoGrayValue = AlbedoGrayValue;
 }
 void SetupMInput(inout MInputType MInput)
 {

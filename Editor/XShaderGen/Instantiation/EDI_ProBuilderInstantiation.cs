@@ -52,7 +52,7 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
             config.SetOptionTransparentZWrite(ShaderOptionFlag.AlwaysDisable);
             config.SetOptionRefraction(ShaderOptionFlag.AlwaysDisable);
             config.SetSupportDotsInstancing(true);
-            config.SetOptionSupportDecal(ShaderOptionFlag.AlwaysDisable);
+            config.SetOptionSupportDecal(ShaderOptionFlag.AlwaysEnable);
             config.SetOptionDecalLayer(SurfaceShaderConfig.DecalLayer.Layer1);
         }
     }
