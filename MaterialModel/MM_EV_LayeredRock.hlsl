@@ -27,7 +27,7 @@
 - _TilingLayer_Tiling
 - _TilingLayer_MatchScaling @Drawer(Toggle)
 
-# Tiling Layer (2U) (R)
+# Tiling Layer (2U) (R) @Hide(_CustomEnum > 3)
 - _TilingLayer_R_BaseMap @TryInline(1)
 - _TilingLayer_R_BaseColor
 - _TilingLayer_R_NormalMap @TryInline(1)
@@ -45,7 +45,7 @@
 - _TilingLayer_R_BlendMode  @Drawer(Enum, Height Max, Height Min)
 - _TilingLayer_R_BlendRadius
 
-# Tiling Layer (2U) (G)
+# Tiling Layer (2U) (G) @Hide(_CustomEnum != 2)
 - _TilingLayer_G_BaseMap @TryInline(1)
 - _TilingLayer_G_BaseColor
 - _TilingLayer_G_NormalMap @TryInline(1)
@@ -63,7 +63,7 @@
 - _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min)
 - _TilingLayer_G_BlendRadius @Hide(_CustomOption1 <= 0)
 
-# Additional Layer (2U) (B)
+# Additional Layer (2U) (B) @Hide(_UseAdditionalLayer == 0)
 - _AdditionalLayer_BaseColor
 - _AdditionalLayer_NormalScale
 - _AdditionalLayer_AmbientOcclusion
@@ -77,7 +77,7 @@
 - _AdditionalLayer_BlendMode @Drawer(Enum, Height Max, Height Min)
 - _AdditionalLayer_BlendRadius
 
-# Detail Layer (2U)
+# Detail Layer (2U) @Hide(_CustomOption2 == 0)
 - _Detail_BaseMap @TryInline(0)
 - _Detail_NormalMap @TryInline(1)
 - _Detail_NormalScale
@@ -88,7 +88,7 @@
 - _Detail_Tiling
 - _Detail_MatchScaling @Drawer(Toggle)
 
-# Topping Layer (2U)
+# Topping Layer (2U) @Hide(_CustomEnum < 3)
 - _ToppingLayer_BaseMap @TryInline(1)
 - _ToppingLayer_BaseColor
 - _ToppingLayer_NormalMap @TryInline(1)
@@ -205,7 +205,7 @@ _ToppingLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 #materialoption.Emissive = Disable
 // #materialoption.Deferred = Enable
 
-#materialoption.CustomEnum.LayerCount = (Tiling, TilingR, TilingRG, Tiling_Topping, TilingR_Topping)
+#materialoption.CustomEnum.LayerCount = (Tiling, TilingR, TilingRG, TilingR_Topping, Tiling_Topping)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
 #materialoption.CustomOption1.UseBaseLayer = OptionEnable
 #materialoption.CustomOption2.UseDetailLayer = OptionDisable
@@ -321,7 +321,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	// MInput.Base.Roughness *= GetPerceptualRoughnessFromMaskMap(MaskMap);
 #endif
 	// Topping Layer
-#if defined(MATERIAL_ENUM_LAYERCOUNT_TILING_TOPPING) | MATERIAL_ENUM_LAYERCOUNT_TILINGR_TOPPING |1
+#if defined(MATERIAL_ENUM_LAYERCOUNT_TILING_TOPPING) | MATERIAL_ENUM_LAYERCOUNT_TILINGR_TOPPING
 	float2 ToppingCoordinates = PixelIn.UV1 * _ToppingLayer_Tiling * lerp(1, LocalScaleX, _ToppingLayer_MatchScaling);
 	float3 NormalWS = 0;
 #if defined(MATERIAL_USE_USEBASELAYER)
