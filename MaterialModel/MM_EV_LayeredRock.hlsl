@@ -219,7 +219,6 @@ _ToppingLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonHeader.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
-#include "Packages/com.funplus.xrender/Shaders/Library/CommonAntiTilling.hlsl"
 #include "Assets/Res/Shader/Includes/LayeredSurface.hlsl"
 
 void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData, inout MInputType MInput)
