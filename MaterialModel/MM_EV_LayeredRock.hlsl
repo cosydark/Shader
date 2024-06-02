@@ -88,7 +88,7 @@
 - _Detail_Tiling
 - _Detail_MatchScaling @Drawer(Toggle)
 
-# Topping Layer (2U) @Hide(_CustomOption2 == 0)
+# Topping Layer (2U) @Hide(_CustomOption3 == 0)
 - _ToppingLayer_BaseMap @TryInline(1)
 - _ToppingLayer_BaseColor
 - _ToppingLayer_NormalMap @TryInline(1)
@@ -102,7 +102,7 @@
 - _ToppingLayer_Spread
 ### Tiling Setting
 - _ToppingLayer_Tiling
-- _ToppingLayer_HexTilingRotation
+- _ToppingLayer_UseHexTiling @Drawer(Toggle)
 - _ToppingLayer_MatchScaling @Drawer(Toggle)
 ### Blend Setting
 - _ToppingLayer_BlendMode  @Drawer(Enum, Height Max, Height Min)
@@ -188,7 +188,7 @@ _ToppingLayer_NormalIntensity ("Normal Intensity", Range(0, 1)) = 0.5
 _ToppingLayer_Coverage ("Coverage", Range(0, 1)) = 0.5
 _ToppingLayer_Spread ("Spread", Range(0, 1)) = 0.5
 _ToppingLayer_Tiling ("Tiling", Float) = 1
-_ToppingLayer_HexTilingRotation ("Hex Tiling Info", Float) = 77
+_ToppingLayer_UseHexTiling ("Use Hex Tiling", Int) = 0
 _ToppingLayer_MatchScaling ("Match Scaling", Int) = 0
 _ToppingLayer_BlendMode ("Blend Mode", Float) = 1
 _ToppingLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
@@ -345,8 +345,15 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_ToppingLayer_HeightOffset,
 						MLayer_Detail
 						);
-	// BlendWithHeight_HexTilling(MLayer_Detail, ToppingCoordinates, float4(_ToppingLayer_HexTilingRotation, 0.456, 10, 0.2), Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
-	BlendWithHeight(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
+	BRANCH
+	if(_ToppingLayer_UseHexTiling > FLT_EPS)
+	{
+		BlendWithHeight_HexTilling(MLayer_Detail, ToppingCoordinates, float4(77, 0.456, 10, 0.2), Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
+	}
+	else
+	{
+		BlendWithHeight(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
+	}
 #endif
 }
 
