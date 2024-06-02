@@ -27,7 +27,7 @@
 - _TilingLayer_Tiling
 - _TilingLayer_MatchScaling @Drawer(Toggle)
 
-# Tiling Layer (2U) (R) @Hide(_CustomEnum > 3)
+# Tiling Layer (2U) (R) @Hide(_CustomEnum < 1)
 - _TilingLayer_R_BaseMap @TryInline(1)
 - _TilingLayer_R_BaseColor
 - _TilingLayer_R_NormalMap @TryInline(1)
@@ -45,7 +45,7 @@
 - _TilingLayer_R_BlendMode  @Drawer(Enum, Height Max, Height Min)
 - _TilingLayer_R_BlendRadius
 
-# Tiling Layer (2U) (G) @Hide(_CustomEnum != 2)
+# Tiling Layer (2U) (G) @Hide(_CustomEnum < 2)
 - _TilingLayer_G_BaseMap @TryInline(1)
 - _TilingLayer_G_BaseColor
 - _TilingLayer_G_NormalMap @TryInline(1)
@@ -88,7 +88,7 @@
 - _Detail_Tiling
 - _Detail_MatchScaling @Drawer(Toggle)
 
-# Topping Layer (2U) @Hide(_CustomEnum < 3)
+# Topping Layer (2U) @Hide(_CustomOption2 == 0)
 - _ToppingLayer_BaseMap @TryInline(1)
 - _ToppingLayer_BaseColor
 - _ToppingLayer_NormalMap @TryInline(1)
@@ -102,7 +102,7 @@
 - _ToppingLayer_Spread
 ### Tiling Setting
 - _ToppingLayer_Tiling
-- _ToppingLayer_HexTilingRotation @Hide(_CustomOption3 == 0)
+- _ToppingLayer_HexTilingRotation
 - _ToppingLayer_MatchScaling @Drawer(Toggle)
 ### Blend Setting
 - _ToppingLayer_BlendMode  @Drawer(Enum, Height Max, Height Min)
@@ -205,11 +205,11 @@ _ToppingLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 #materialoption.Emissive = Disable
 // #materialoption.Deferred = Enable
 
-#materialoption.CustomEnum.LayerCount = (Tiling, TilingR, TilingRG, TilingR_Topping, Tiling_Topping)
+#materialoption.CustomEnum.LayerCount = (Tiling, TilingR, TilingRG)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
 #materialoption.CustomOption1.UseBaseLayer = OptionEnable
 #materialoption.CustomOption2.UseDetailLayer = OptionDisable
-#materialoption.CustomOption3.UseHexTilling = OptionDisable
+#materialoption.CustomOption3.UseToppingLayer = OptionDisable
 
 #else
 #include "./MM_EV_LayeredRock.Header.hlsl"
@@ -251,7 +251,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						);
 	SetupTilingLayer(MLayer, TilingLayer_2_Coordinate, MInput);
 	// Tiling Layer R
-#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR_TOPPING)
+#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
 	float2 TilingLayer_R_Coordinate = PixelIn.UV1 * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
 	MaterialLayer MLayer_R;
@@ -300,13 +300,13 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 #if defined(MATERIAL_USE_USEDETAILLAYER)
 	DetailLayer DLayer;
 	float2 DetailCoordinate = PixelIn.UV1 * _Detail_Tiling * lerp(1, LocalScaleX, _Detail_MatchScaling);
-	SetupDetailLayer(	_Detail_BaseMap,
-						_Detail_NormalMap,
-						_Detail_NormalScale,
-						_Detail_MaskMap,
-						_Detail_AmbientOcclusion,
-						_Detail_AlbedoGrayValue,
-						DLayer
+	SetupDetailLayer( _Detail_BaseMap,
+					  _Detail_NormalMap,
+					  _Detail_NormalScale,
+					  _Detail_MaskMap,
+					  _Detail_AmbientOcclusion,
+					  _Detail_AlbedoGrayValue,
+					  DLayer
 					);
 	BlendDetailLayer(DLayer, DetailCoordinate, MInput);
 #endif
@@ -321,19 +321,20 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	// MInput.Base.Roughness *= GetPerceptualRoughnessFromMaskMap(MaskMap);
 #endif
 	// Topping Layer
-#if defined(MATERIAL_ENUM_LAYERCOUNT_TILING_TOPPING) | MATERIAL_ENUM_LAYERCOUNT_TILINGR_TOPPING
+#if defined(MATERIAL_USE_USETOPPINGLAYER) & !defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	float2 ToppingCoordinates = PixelIn.UV1 * _ToppingLayer_Tiling * lerp(1, LocalScaleX, _ToppingLayer_MatchScaling);
-	float3 NormalWS = 0;
+	
+	float3 NormalWS;
 #if defined(MATERIAL_USE_USEBASELAYER)
 	NormalWS = TransformVectorTSToVectorWS_RowMajor(NormalTS, PixelIn.TangentToWorldMatrix, true);
 	NormalWS = lerp(PixelIn.GeometricNormalWS, NormalWS, _ToppingLayer_NormalIntensity);
 #else
 	NormalWS = PixelIn.GeometricNormalWS;
 #endif
+	
 	float3 NDotUp = dot(NormalWS, normalize(float3(0, 1, 0)));
 	float Coverage = NDotUp - lerp(1, -1, _ToppingLayer_Coverage);
 	Coverage = saturate(Coverage / _ToppingLayer_Spread);
-
 	MaterialLayer MLayer_Detail;
 	SetupMaterialLayer(	_ToppingLayer_BaseMap,
 						_ToppingLayer_BaseColor,
@@ -344,12 +345,8 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_ToppingLayer_HeightOffset,
 						MLayer_Detail
 						);
-#if defined(MATERIAL_USE_USEHEXTILLING)
-	BlendWithHeight_HexTilling(MLayer_Detail, ToppingCoordinates, float4(_ToppingLayer_HexTilingRotation, 0.456, 10, 0.2), Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
-#else
+	// BlendWithHeight_HexTilling(MLayer_Detail, ToppingCoordinates, float4(_ToppingLayer_HexTilingRotation, 0.456, 10, 0.2), Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
 	BlendWithHeight(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
-#endif
-	
 #endif
 }
 
