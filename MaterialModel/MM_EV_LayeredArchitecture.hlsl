@@ -120,7 +120,7 @@ _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 #materialoption.PostProcessMaterialInput  = Enable
 #materialoption.Emissive = Disable
 
-#materialoption.CustomEnum.LayerCount = (0_Layer, 1_Layer_R, 2_Layer_RG)
+#materialoption.CustomEnum.LayerCount = (Tiling, TilingR, TilingRG)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
 #materialoption.CustomOption1.UseHeightLerp = OptionEnable
 #materialoption.CustomOption2.UseBaseLayer = OptionEnable
@@ -167,7 +167,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	SetupTilingLayer(MLayer, TilingLayer_2_Coordinate, MInput);
 	
 	// Tiling Layer R
-#if defined(MATERIAL_ENUM_LAYERCOUNT_1_LAYER_R) | defined(MATERIAL_ENUM_LAYERCOUNT_2_LAYER_RG) | defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB)
+#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
 	float2 TilingLayer_R_Coordinate = PixelIn.UV1 * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
 	MaterialLayer MLayer_R;
@@ -188,7 +188,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 #endif
 
 	// Tiling Layer G
-#if defined(MATERIAL_ENUM_LAYERCOUNT_2_LAYER_RG) | defined(MATERIAL_ENUM_LAYERCOUNT_3_LAYER_RGB)
+#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
 	float2 TilingLayer_G_Coordinate = PixelIn.UV1 * _TilingLayer_G_Tiling * lerp(1, LocalScaleX, _TilingLayer_G_MatchScaling);
 	MaterialLayer MLayer_G;
