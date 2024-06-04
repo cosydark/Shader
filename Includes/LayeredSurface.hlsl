@@ -77,12 +77,12 @@ void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMas
     MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
     MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
 }
-void BlendWithHeight_HexTilling(MaterialLayer MLayer, float2 Coordinate, float4 HexTilingInfo, float IntensityMask, float BlendRadius, float BlendMode, inout MInputType MInput )
+void BlendWithHeight_Hex(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float BlendMode, inout MInputType MInput )
 {
-    float4 BaseMapBlend = SampleTexture2DHex(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate, HexTilingInfo.x, HexTilingInfo.y, HexTilingInfo.z, HexTilingInfo.w) * MLayer.BaseColor;
-    float4 NormalMapBlend = SampleTexture2DHex(MLayer.NormalMap, SamplerLinearRepeat, Coordinate, HexTilingInfo.x, HexTilingInfo.y, HexTilingInfo.z, HexTilingInfo.w);
+    float4 BaseMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
+    float4 NormalMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
-    float4 MaskMapBlend = SampleTexture2DHex(MLayer.MaskMap, SamplerLinearRepeat, Coordinate, HexTilingInfo.x, HexTilingInfo.y, HexTilingInfo.z, HexTilingInfo.w);
+    float4 MaskMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
     
     float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
     
@@ -103,6 +103,21 @@ void BlendWithOutHeight(MaterialLayer MLayer, float2 Coordinate, float Intensity
     float4 NormalMapBlend = SAMPLE_TEXTURE2D(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
+    
+    MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, IntensityMask);
+    MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, IntensityMask);
+    MInput.Specular.Reflectance = lerp(MInput.Specular.Reflectance, MLayer.Reflectance, IntensityMask);
+    MInput.Base.Metallic = lerp(MInput.Base.Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), IntensityMask);
+    MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), IntensityMask);
+    MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), IntensityMask);
+    MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), IntensityMask);
+}
+void BlendWithOutHeight_Hex(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, inout MInputType MInput)
+{
+    float4 BaseMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
+    float4 NormalMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
+    float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
+    float4 MaskMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
     
     MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, IntensityMask);
     MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, IntensityMask);
@@ -143,7 +158,7 @@ void BlendDetailLayer(DetailLayer DLayer, float2 Coordinate, inout MInputType MI
     MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(MInput.TangentSpaceNormal.NormalTS, NormalBlend);
     MInput.AO.AmbientOcclusion = min(MInput.AO.AmbientOcclusion, lerp(1, GetMaterialAOFromMaskMap(MaskMapBlend), DLayer.AmbientOcclusion));
 }
-void SetupTilingLayer(MaterialLayer MLayer, float2 Coordinate, inout MInputType MInput)
+void InitializeTilingLayer(MaterialLayer MLayer, float2 Coordinate, inout MInputType MInput)
 {
     // Modify Height
     float4 Mask = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
@@ -151,6 +166,20 @@ void SetupTilingLayer(MaterialLayer MLayer, float2 Coordinate, inout MInputType 
     // Fill
     MInput.Base.Color = SAMPLE_TEXTURE2D(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate).rgb * MLayer.BaseColor.rgb;
     MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(SAMPLE_TEXTURE2D(MLayer.NormalMap, SamplerLinearRepeat, Coordinate), MLayer.NormalScale);
+    MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(Mask);
+    MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(Mask);
+    MInput.Detail.Height = GetHeightFromMaskMap(Mask);
+    MInput.Base.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
+    MInput.Specular.Reflectance = MLayer.Reflectance;
+}
+void InitializeTilingLayer_Hex(MaterialLayer MLayer, float2 Coordinate, inout MInputType MInput)
+{
+    // Modify Height
+    float4 Mask = SAMPLE_TEXTURE2D_HEX(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
+    Mask.z = saturate(ModifyHeight(Mask.z, MLayer.HeightOffset));
+    // Fill
+    MInput.Base.Color = SAMPLE_TEXTURE2D_HEX(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate).rgb * MLayer.BaseColor.rgb;
+    MInput.TangentSpaceNormal.NormalTS = GetNormalTSFromNormalTex(SAMPLE_TEXTURE2D_HEX(MLayer.NormalMap, SamplerLinearRepeat, Coordinate), MLayer.NormalScale);
     MInput.Base.Metallic = GetMaterialMetallicFromMaskMap(Mask);
     MInput.AO.AmbientOcclusion = GetMaterialAOFromMaskMap(Mask);
     MInput.Detail.Height = GetHeightFromMaskMap(Mask);
