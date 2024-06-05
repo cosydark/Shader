@@ -83,8 +83,9 @@
 - _AdditionalLayer_MaskContrast
 - _AdditionalLayer_MaskIntensity
 ### Blend Setting
-- _AdditionalLayer_BlendMode @Drawer(Enum, Height Max, Height Min)
-- _AdditionalLayer_BlendRadius
+- _AdditionalLayer_UseHeightLerp @Drawer(Toggle)
+- _AdditionalLayer_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_AdditionalLayer_UseHeightLerp == 0)
+- _AdditionalLayer_BlendRadius @Hide(_AdditionalLayer_UseHeightLerp == 0)
 
 # Detail Layer @Hide(_CustomOption2 == 0)
 - _Detail_BaseMap @TryInline(0)
@@ -182,6 +183,7 @@ _AdditionalLayer_NormalScale ("Normal Scale", Range(0, 1)) = 0.5
 _AdditionalLayer_Height ("Height", Range(0, 1)) = 0.5
 _AdditionalLayer_Roughness ("Roughness", Range(0, 1)) = 0.5
 _AdditionalLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+_AdditionalLayer_UseHeightLerp ("Use Height Lerp", Int) = 0
 _AdditionalLayer_BlendMode ("Blend Mode", Float) = 1
 _AdditionalLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _AdditionalLayer_MaskContrast ("Mask Contrast R", Float) = 1
@@ -202,7 +204,7 @@ _ToppingLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _ToppingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _ToppingLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _ToppingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
-_ToppingLayer_HeightOffset ("Height Offset", Range(0, 1)) = 0.5
+_ToppingLayer_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _ToppingLayer_Porosity ("Porosity", Int) = 0
 _ToppingLayer_NormalIntensity ("Normal Intensity", Range(0, 1)) = 0.5
 _ToppingLayer_Coverage ("Coverage", Range(0, 1)) = 0.5
@@ -335,7 +337,14 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 								_AdditionalLayer_Reflectance,
 								SMLayer_B
 							);
-		BlendWithHeightNoTexture(SMLayer_B, BlendMask.b, _AdditionalLayer_BlendRadius, _AdditionalLayer_BlendMode, MInput);
+		if(_AdditionalLayer_UseHeightLerp > FLT_EPS)
+		{
+			BlendWithHeightNoTexture(SMLayer_B, BlendMask.b, _AdditionalLayer_BlendRadius, _AdditionalLayer_BlendMode, MInput);
+		}
+		else
+		{
+			BlendWithOutHeightNoTexture(SMLayer_B, BlendMask.b, MInput);
+		}
 	}
 	// Detail Layer
 #if defined(MATERIAL_USE_USEDETAILLAYER)
@@ -357,14 +366,10 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float4 MaskMap = SAMPLE_TEXTURE2D(_BaseLayer_MaskMap, SamplerLinearRepeat, BaseCoordinate);
 	float4 NormalMap = SAMPLE_TEXTURE2D(_BaseLayer_NormalMap, SamplerLinearRepeat, BaseCoordinate);
 	float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_NormalScale);
-	MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
-	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
-	// MInput.Base.Roughness *= GetPerceptualRoughnessFromMaskMap(MaskMap);
 #endif
 	// Topping Layer
-#if defined(MATERIAL_USE_USETOPPINGLAYER) & !defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
+#if defined(MATERIAL_USE_USETOPPINGLAYER) & !defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)|1
 	float2 ToppingCoordinates = PixelIn.UV1 * _ToppingLayer_Tiling * lerp(1, LocalScaleX, _ToppingLayer_MatchScaling);
-	
 	float3 NormalWS;
 #if defined(MATERIAL_USE_USEBASELAYER)
 	NormalWS = TransformVectorTSToVectorWS_RowMajor(NormalTS, PixelIn.TangentToWorldMatrix, true);
@@ -395,6 +400,12 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	{
 		BlendWithHeight(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
 	}
+#endif
+	
+#if defined(MATERIAL_USE_USEBASELAYER)
+	MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
+	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
+	// MInput.Base.Roughness *= GetPerceptualRoughnessFromMaskMap(MaskMap);
 #endif
 }
 

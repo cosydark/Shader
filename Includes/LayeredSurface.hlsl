@@ -147,6 +147,22 @@ void BlendWithHeightNoTexture(SimpleMaterialLayer SMLayer, float IntensityMask, 
     // MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
     MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), HeightBlendMask);
 }
+void BlendWithOutHeightNoTexture(SimpleMaterialLayer SMLayer, float IntensityMask, inout MInputType MInput)
+{
+    float4 BaseColorBlend = SMLayer.BaseColor;
+    float3 NormalBlend = lerp(float3(0, 0, 1), MInput.TangentSpaceNormal.NormalTS, SMLayer.NormalScale);
+    float4 MaskMapBlend = SMLayer.Mask;
+
+    BaseColorBlend = lerp(1, BaseColorBlend, IntensityMask);
+    
+    MInput.Base.Color = saturate(MInput.Base.Color * BaseColorBlend);// Make BaseColor Physical
+    MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, IntensityMask);
+    MInput.Specular.Reflectance = lerp(MInput.Specular.Reflectance, SMLayer.Reflectance, IntensityMask);
+    // MInput.Base.Metallic = lerp(MInput.Base.Metallic, GetMaterialMetallicFromMaskMap(MaskMapBlend), HeightBlendMask);
+    // MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, GetMaterialAOFromMaskMap(MaskMapBlend), HeightBlendMask);
+    // MInput.Detail.Height = lerp(MInput.Detail.Height, GetHeightFromMaskMap(MaskMapBlend), HeightBlendMask);
+    MInput.Base.Roughness = lerp(MInput.Base.Roughness, GetPerceptualRoughnessFromMaskMap(MaskMapBlend), IntensityMask);
+}
 void BlendDetailLayer(DetailLayer DLayer, float2 Coordinate, inout MInputType MInput)
 {
     float BaseMapAlbedoGrayValue = DetailLuminance(SAMPLE_TEXTURE2D(DLayer.BaseMap, SamplerTriLinearRepeat, Coordinate));
@@ -241,5 +257,9 @@ void SetupMInput(inout MInputType MInput)
     MInput.Detail.Height = 0.5;
     MInput.Base.Roughness = 0.5;
     MInput.Specular.Reflectance = 0.5;
+}
+float2 QueryPorosityFactors(int Index)
+{
+    return 0;
 }
 #endif
