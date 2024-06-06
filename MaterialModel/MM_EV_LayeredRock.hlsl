@@ -113,6 +113,7 @@
 - _ToppingLayer_Spread
 ### Tiling Setting
 - _ToppingLayer_Tiling
+- _ToppingLayer_Use2U @Drawer(Toggle)
 - _ToppingLayer_HexTiling @Drawer(Toggle)
 - _ToppingLayer_MatchScaling @Drawer(Toggle)
 ### Blend Setting
@@ -140,7 +141,7 @@ _TilingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_Porosity ("Porosity", Int) = 0
 _TilingLayer_Tiling ("Tiling", Float) = 1
-_TilingLayer_Use2U ("Use 2U", Int) = 0
+_TilingLayer_Use2U ("Use 2U", Int) = 1
 _TilingLayer_HexTiling ("Hex Tiling", Int) = 0
 _TilingLayer_MatchScaling ("Match Scaling", Int) = 0
 // Tiling Layer R
@@ -153,7 +154,7 @@ _TilingLayer_R_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_R_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_R_Porosity ("Porosity", Int) = 0
 _TilingLayer_R_Tiling ("Tiling", Float) = 1
-_TilingLayer_R_Use2U ("Use 2U", Int) = 0
+_TilingLayer_R_Use2U ("Use 2U", Int) = 1
 _TilingLayer_R_HexTiling ("Hex Tiling", Int) = 0
 _TilingLayer_R_MatchScaling ("Match Scaling", Int) = 0
 _TilingLayer_R_BlendMode ("Blend Mode", Float) = 1
@@ -170,7 +171,7 @@ _TilingLayer_G_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_G_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_G_Porosity ("Porosity", Int) = 0
 _TilingLayer_G_Tiling ("Tiling", Float) = 1
-_TilingLayer_G_Use2U ("Use 2U", Int) = 0
+_TilingLayer_G_Use2U ("Use 2U", Int) = 1
 _TilingLayer_G_HexTiling ("Hex Tiling", Int) = 0
 _TilingLayer_G_MatchScaling ("Match Scaling", Int) = 0
 _TilingLayer_G_BlendMode ("Blend Mode", Float) = 1
@@ -210,6 +211,7 @@ _ToppingLayer_NormalIntensity ("Normal Intensity", Range(0, 1)) = 0.5
 _ToppingLayer_Coverage ("Coverage", Range(0, 1)) = 0.5
 _ToppingLayer_Spread ("Spread", Range(0, 1)) = 0.5
 _ToppingLayer_Tiling ("Tiling", Float) = 1
+_ToppingLayer_Use2U ("Use 2U", Int) = 1
 _ToppingLayer_HexTiling ("Hex Tiling", Int) = 0
 _ToppingLayer_MatchScaling ("Match Scaling", Int) = 0
 _ToppingLayer_BlendMode ("Blend Mode", Float) = 1
@@ -282,7 +284,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	// Tiling Layer R
 #if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
-	float2 TilingLayer_R_Coordinate = PixelIn.UV1 * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
+	float2 TilingLayer_R_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_R_Use2U) * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
 	MaterialLayer MLayer_R;
 	SetupMaterialLayer(	_TilingLayer_R_BaseMap,
 						_TilingLayer_R_BaseColor,
@@ -305,7 +307,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	// Tiling Layer G
 #if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
-	float2 TilingLayer_G_Coordinate = PixelIn.UV1 * _TilingLayer_G_Tiling * lerp(1, LocalScaleX, _TilingLayer_G_MatchScaling);
+	float2 TilingLayer_G_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_G_Use2U) * _TilingLayer_G_Tiling * lerp(1, LocalScaleX, _TilingLayer_G_MatchScaling);
 	MaterialLayer MLayer_G;
 	SetupMaterialLayer(	_TilingLayer_G_BaseMap,
 						_TilingLayer_G_BaseColor,
@@ -368,8 +370,8 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_NormalScale);
 #endif
 	// Topping Layer
-#if defined(MATERIAL_USE_USETOPPINGLAYER) & !defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)|1
-	float2 ToppingCoordinates = PixelIn.UV1 * _ToppingLayer_Tiling * lerp(1, LocalScaleX, _ToppingLayer_MatchScaling);
+#if defined(MATERIAL_USE_USETOPPINGLAYER) & !defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
+	float2 ToppingCoordinates = lerp(PixelIn.UV0, PixelIn.UV1, _ToppingLayer_Use2U) * _ToppingLayer_Tiling * lerp(1, LocalScaleX, _ToppingLayer_MatchScaling);
 	float3 NormalWS;
 #if defined(MATERIAL_USE_USEBASELAYER)
 	NormalWS = TransformVectorTSToVectorWS_RowMajor(NormalTS, PixelIn.TangentToWorldMatrix, true);
