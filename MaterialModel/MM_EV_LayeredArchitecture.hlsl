@@ -2,6 +2,7 @@
 #attribute Material.Author = "QP4B"
 #attribute Material.Name = "EV_LayeredArchitecture"
 #attribute Material.ShadingModel = "DefaultLit"
+#attribute Material.LODCrossFade = Enable
 
 #stylesheet
 
@@ -22,7 +23,7 @@
 - _TilingLayer_MaskMap @TryInline(0)
 - _TilingLayer_Reflectance
 - _TilingLayer_HeightOffset
-- _TilingLayer_Porosity @Drawer(Enum, Cardboard, Rock, Brick, CardboardGlossy, Ceramic_Matte, Clay, Coal, Concrete, Dirt, Fabric, Food, Glass, Ice, Metal_Reflective, Metal_Matte)
+- _TilingLayer_PorosityFactor @Drawer(PorosityFactor)
 ### Tiling Setting
 - _TilingLayer_Tiling
 - _TilingLayer_Use2U @Drawer(Toggle)
@@ -37,7 +38,7 @@
 - _TilingLayer_R_MaskMap @TryInline(0)
 - _TilingLayer_R_Reflectance
 - _TilingLayer_R_HeightOffset
-- _TilingLayer_R_Porosity @Drawer(Enum, Cardboard, Rock, Brick, CardboardGlossy, Ceramic_Matte, Clay, Coal, Concrete, Dirt, Fabric, Food, Glass, Ice, Metal_Reflective, Metal_Matte)
+- _TilingLayer_R_PorosityFactor @Drawer(PorosityFactor)
 ### Tiling Setting
 - _TilingLayer_R_Tiling
 - _TilingLayer_R_Use2U @Drawer(Toggle)
@@ -58,7 +59,7 @@
 - _TilingLayer_G_MaskMap @TryInline(0)
 - _TilingLayer_G_Reflectance
 - _TilingLayer_G_HeightOffset
-- _TilingLayer_G_Porosity @Drawer(Enum, Cardboard, Rock, Brick, CardboardGlossy, Ceramic_Matte, Clay, Coal, Concrete, Dirt, Fabric, Food, Glass, Ice, Metal_Reflective, Metal_Matte)
+- _TilingLayer_G_PorosityFactor @Drawer(PorosityFactor)
 ### Tiling Setting
 - _TilingLayer_G_Tiling
 - _TilingLayer_G_Use2U @Drawer(Toggle)
@@ -88,7 +89,7 @@ _TilingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _TilingLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _TilingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_HeightOffset ("Height Offset", Range(-1, 1)) = 0
-_TilingLayer_Porosity ("Porosity", Int) = 0
+_TilingLayer_PorosityFactor ("Porosity", Int) = 0
 _TilingLayer_Tiling ("Tiling", Float) = 1
 _TilingLayer_Use2U ("Use 2U", Int) = 0
 _TilingLayer_HexTiling ("Hex Tiling", Int) = 0
@@ -101,7 +102,7 @@ _TilingLayer_R_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _TilingLayer_R_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _TilingLayer_R_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_R_HeightOffset ("Height Offset", Range(-1, 1)) = 0
-_TilingLayer_R_Porosity ("Porosity", Int) = 0
+_TilingLayer_R_PorosityFactor ("Porosity", Int) = 0
 _TilingLayer_R_Tiling ("Tiling", Float) = 1
 _TilingLayer_R_Use2U ("Use 2U", Int) = 0
 _TilingLayer_R_HexTiling ("Hex Tiling", Int) = 0
@@ -118,7 +119,7 @@ _TilingLayer_G_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _TilingLayer_G_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _TilingLayer_G_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _TilingLayer_G_HeightOffset ("Height Offset", Range(-1, 1)) = 0
-_TilingLayer_G_Porosity ("Porosity", Int) = 0
+_TilingLayer_G_PorosityFactor ("Porosity", Int) = 0
 _TilingLayer_G_Tiling ("Tiling", Float) = 1
 _TilingLayer_G_Use2U ("Use 2U", Int) = 0
 _TilingLayer_G_HexTiling ("Hex Tiling", Int) = 0
@@ -129,7 +130,7 @@ _TilingLayer_G_MaskContrast ("Mask Contrast R", Float) = 1
 _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 #endproperties
 
-#materialoption.TangentSpaceNormalMap = Enable
+// #materialoption.TangentSpaceNormalMap = Enable
 #materialoption.AmbientOcclusion = Enable
 #materialoption.Reflectance = Enable
 #materialoption.Detail = Enable
@@ -137,6 +138,7 @@ _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
 #materialoption.UseUV1 = Enable
 #materialoption.PostProcessMaterialInput  = Enable
 #materialoption.Emissive = Disable
+#materialoption.CustomNormal = Enable
 
 #materialoption.CustomEnum.LayerCount = (Tiling, TilingR, TilingRG)
 #materialoption.CustomOption0.UseVertexColor = OptionEnable
@@ -270,7 +272,8 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
 #else
 #endif
-	
+	// To World Normal
+	MInput.Geometry.NormalWS = TransformVectorTSToVectorWS_RowMajor(MInput.TangentSpaceNormal.NormalTS, PixelIn.TangentToWorldMatrix);
 }
 
 //#materialoption.CustomizeVertexOutputData

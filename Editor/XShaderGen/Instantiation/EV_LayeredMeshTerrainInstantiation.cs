@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 #if XRP_SHADER_INSTANTIATION_META
 {
-    "ClassName": "EV_LayeredRock",
-    "Name": "XRender/Environment/LayeredSurfaceVariantII",
-    "OutputPath": "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredRock.shader",
-    "MM": "EV_LayeredRock",
+    "ClassName": "EV_LayeredMeshTerrain",
+    "Name": "XRender/Environment/LayeredArchitecture",
+    "OutputPath": "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredMeshTerrain.shader",
+    "MM": "EV_LayeredMeshTerrain",
     "SM": "SHADING_MODEL_STANDARD_PBR",
     "Owner": "QP4B",
     "Usage": "Environment",
-    "Desc": "HeightBlendTest",
+    "Desc": "",
     "PMs": [],
     "Config": [
         "SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Option)",
@@ -28,22 +28,20 @@ using UnityEngine;
 namespace UnityEditor.XRender.XShaderGen.Instantiation
 {
     [SurfaceShaderInstantiationAttribute]
-    public class EV_LayeredRock : XSurfaceShader
+    public class EV_LayeredMeshTerrain : XSurfaceShader
     {
-        public override string GetName() => "XRender/Environment/EV_LayeredRock";
+        public override string GetName() => "XRender/Environment/EV_LayeredMeshTerrain";
         public override string GetOwner() => "QP4B";
-        public override string GetDesc() => "Layered Rock In Editor";
+        public override string GetDesc() => "Layered Mesh Terrain In Editor";
         public override SurfaceShaderUsage GetUsage() => SurfaceShaderUsage.Environment;
-        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredRock.shader";
-        protected override string GetMaterialModelName() => "EV_LayeredRock";
+        public override string GetGenerateShaderPath() => "Assets/Res/Shader/SurfaceShaderLibrary/EV_LayeredMeshTerrain.shader";
+        protected override string GetMaterialModelName() => "EV_LayeredMeshTerrain";
         protected override string GetShadingModelName() => "SHADING_MODEL_STANDARD_PBR";
         protected override List<PluginModelDesc> InitPluginModelDescs() => new()
         {
-            new PluginModelDesc { name = "TerrainBlend", needMultiCompile = false},
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {
-            // config.SetOptionTerrainBlendEnable(ShaderOptionFlag.OptionalDisable);
             config.SetSurfaceType(SurfaceShaderConfig.SurfaceTypeOption.Opaque);
             config.SetOptionTransQueue(SurfaceShaderConfig.TransQueue.Trans);
             config.SetAlphaBlendMode(SurfaceShaderConfig.BlendModeOption.Alpha);

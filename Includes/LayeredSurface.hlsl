@@ -6,6 +6,7 @@
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonAntiTilling.hlsl"
+#include "Assets/Res/Shader/Includes/HeightLerp.hlsl"
 
 struct MaterialLayer
 {
@@ -33,28 +34,31 @@ struct DetailLayer
     float AmbientOcclusion;
     float AlbedoGrayValue;
 };
+
 float DetailLuminance(float3 LinearRgb)
 {
     return dot(LinearRgb, float3(0.2126729, 0.7151522, 0.0721750));
 }
 // TODO(QP4B) A Better Height Blend Function ?
-float2 HeightBlend(float WeightA, float HeightA, float WeightB, float HeightB, float Radius)
-{
-    float MaxHeight = max(WeightA + HeightA, WeightB + HeightB) - Radius;
-    float A = max(WeightA + HeightA - MaxHeight, 0);
-    float B = max(WeightB + HeightB - MaxHeight, 0);
-    return float2(A, B) / (A + B);
-}
+// float2 HeightBlend(float WeightA, float HeightA, float WeightB, float HeightB, float Radius)
+// {
+//     float MaxHeight = max(WeightA + HeightA, WeightB + HeightB) - Radius;
+//     float A = max(WeightA + HeightA - MaxHeight, 0);
+//     float B = max(WeightB + HeightB - MaxHeight, 0);
+//     return float2(A, B) / (A + B);
+// }
+// float ComputeHeightBlendMask(float HeightA, float HeightB, float IntensityMask, float BlendRadius, float BlendMode)
+// {
+//     float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
+//     float2 BlendResult = HeightBlend(Weights.x, HeightA, Weights.y, HeightB, BlendRadius);
+//     return  lerp(BlendResult.x, BlendResult.y, BlendMode);
+// }
 float3 BlendAngelCorrectedNormals(float3 BaseNormal, float3 AdditionalNormal)
 {
     float3 Temp_0 = float3(BaseNormal.xy, BaseNormal.z + 1);
     float3 Temp_1 = float3(-AdditionalNormal.xy, AdditionalNormal.z);
     float3 Temp_2 = dot(Temp_0, Temp_1);
     return normalize(Temp_0 * Temp_2 - Temp_1 * Temp_2);
-}
-float ModifyHeight(float Height, float Offset)
-{
-    return saturate(Height + Offset * 0.5);
 }
 
 void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float BlendMode, inout MInputType MInput )
@@ -64,10 +68,7 @@ void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMas
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
     
-    float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
-    
-    float2 BlendResult = HeightBlend(Weights.x, saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), Weights.y, MInput.Detail.Height, BlendRadius);
-    float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
+    float HeightBlendMask = ComputeHeightBlendMask(saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), MInput.Detail.Height, IntensityMask, BlendRadius, BlendMode);
     
     MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, HeightBlendMask);
     MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, HeightBlendMask);
@@ -84,10 +85,7 @@ void BlendWithHeight_Hex(MaterialLayer MLayer, float2 Coordinate, float Intensit
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
     float4 MaskMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
     
-    float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
-    
-    float2 BlendResult = HeightBlend(Weights.x, saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), Weights.y, MInput.Detail.Height, BlendRadius);
-    float HeightBlendMask = lerp(BlendResult.x, BlendResult.y, BlendMode);
+    float HeightBlendMask = ComputeHeightBlendMask(saturate(ModifyHeight(MaskMapBlend.z, MLayer.HeightOffset)), MInput.Detail.Height, IntensityMask, BlendRadius, BlendMode);
     
     MInput.Base.Color = lerp(MInput.Base.Color, BaseMapBlend, HeightBlendMask);
     MInput.TangentSpaceNormal.NormalTS = lerp(MInput.TangentSpaceNormal.NormalTS, NormalBlend, HeightBlendMask);
