@@ -1,10 +1,9 @@
 // Author: QP4B
-#ifndef XRENDER_RES_AVT_HLSL_INCLUDED
-#define XRENDER_RES_AVT_HLSL_INCLUDED
+#ifndef XRENDER_RES_AVT_SAMPLER_HLSL_INCLUDED
+#define XRENDER_RES_AVT_SAMPLER_HLSL_INCLUDED
 
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonTransform.hlsl"
-#include "Packages/com.funplus.xrender/Shaders/Library/CommonHeader.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Modules/XTerrain/XTerrainVTFunction.hlsl"
 
 struct TerrainData
@@ -31,6 +30,7 @@ void GetTerrainNormalWS(float2 NodeUV, float QuadIndex, float3 NormalTS, inout T
     TData.TerrainTangentWS = Orthonormalize(TangentWS, TData.TerrainNormalWS);
     TData.TerrainBinormalWS = ComputeBinormal(TData.TerrainNormalWS, TData.TerrainTangentWS, BinormalSymmetry);
 }
+
 void GetAVTData(float2 SectorUV, float2 QuadUV, float2 VirtualImageUV, float VirtualImageSize, float QuadIndex, out float4 Albedo, out float4 Normal)
 {
     VirtualTextureContext ctx = InitialVirtualTextureContext();
@@ -70,13 +70,15 @@ void ComputeNodeUVAndQuadIndex(float3 PositionWS, inout float2 NodeUV, inout flo
     float2 GlobalUV = PositionWS.xz * GetInvTerrainSize() + 0.5;
     SampleTerrainLODData(GlobalUV, PositionWS, NodeUV, QuadIndex);
 }
-float GetTerrainHeight(float3 PositionWS, float2 NodeUV, float QuadIndex)
+
+float GetTerrainHeight(float2 NodeUV, float QuadIndex)
 {
     return SampleTerrainHeightData(NodeUV, QuadIndex);
 }
-void SampleAVT(float3 PositionWS, float2 Offset, float2 NodeUV, float QuadIndex, inout TerrainData TData)
+
+void GetTerrainData(float3 PositionWS, float2 Offset, float2 NodeUV, float QuadIndex, inout TerrainData TData)
 {
-    float TerrainHeightWS = GetTerrainHeight(PositionWS, NodeUV, QuadIndex);
+    float TerrainHeightWS = GetTerrainHeight(NodeUV, QuadIndex);
     PositionWS.xz += (PositionWS.y - TerrainHeightWS) * Offset;// Offset With Normal
     float2 GlobalUV = PositionWS.xz * GetInvTerrainSize() + 0.5;
     SampleTerrainLODData(GlobalUV, PositionWS, NodeUV, QuadIndex);

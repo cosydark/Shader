@@ -37,7 +37,7 @@ void BlendTerrainVTWithOutHeight(FPixelInput PixelIn, inout MInputType MInput, f
     float QuadIndex = 0;
     float2 NodeUV = float2(0, 0);
     ComputeNodeUVAndQuadIndex(PixelIn.PositionWS, NodeUV, QuadIndex);
-    float TerrainHeight = GetTerrainHeight(PixelIn.PositionWS, NodeUV, QuadIndex);
+    float TerrainHeight = GetTerrainHeight(NodeUV, QuadIndex);
     
     if(PixelIn.PositionWS.y >= TerrainHeight - 0.5 && PixelIn.PositionWS.y <= TerrainHeight + BlendHeight + 0.1)
     {
@@ -45,7 +45,7 @@ void BlendTerrainVTWithOutHeight(FPixelInput PixelIn, inout MInputType MInput, f
         BlendAlpha = smoothstep(0, 1, BlendAlpha);
         
         ZERO_INITIALIZE(TerrainData, Data);
-        SampleAVT(PixelIn.PositionWS, -PixelIn.GeometricNormalWS.xz, NodeUV, QuadIndex, Data);
+        GetTerrainData(PixelIn.PositionWS, -PixelIn.GeometricNormalWS.xz, NodeUV, QuadIndex, Data);
         MInput.Base.Color = lerp(MInput.Base.Color, Data.TerrainColor, BlendAlpha);
         MInput.Base.Metallic = lerp(MInput.Base.Metallic, Data.TerrainMetallic, BlendAlpha);
         MInput.Base.Roughness = lerp(MInput.Base.Roughness, Data.TerrainRoughness, BlendAlpha);
@@ -61,7 +61,7 @@ void BlendTerrainVTWithHeight(FPixelInput PixelIn, inout MInputType MInput, floa
     float QuadIndex = 0;
     float2 NodeUV = float2(0, 0);
     ComputeNodeUVAndQuadIndex(PixelIn.PositionWS, NodeUV, QuadIndex);
-    float TerrainHeight = GetTerrainHeight(PixelIn.PositionWS, NodeUV, QuadIndex);
+    float TerrainHeight = GetTerrainHeight(NodeUV, QuadIndex);
     
     if(PixelIn.PositionWS.y >= TerrainHeight - 0.5 && PixelIn.PositionWS.y <= TerrainHeight + BlendHeight + 0.1)
     {
@@ -69,7 +69,7 @@ void BlendTerrainVTWithHeight(FPixelInput PixelIn, inout MInputType MInput, floa
         BlendAlpha = smoothstep(0, 1, BlendAlpha);
         
         ZERO_INITIALIZE(TerrainData, Data);
-        SampleAVT(PixelIn.PositionWS, -PixelIn.GeometricNormalWS.xz,NodeUV, QuadIndex, Data);
+        GetTerrainData(PixelIn.PositionWS, -PixelIn.GeometricNormalWS.xz,NodeUV, QuadIndex, Data);
 
         float HeightBlendMask = ComputeHeightBlendMask(saturate(ModifyHeight(Data.TerrainHeight, HeightOffset)), MInput.Detail.Height, BlendAlpha, BlendRadius, BlendMode);
 
