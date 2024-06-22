@@ -29,7 +29,7 @@ _TerrainBlend_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 
 #include "Packages/com.funplus.xrender/Shaders/Library/Common.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonHeader.hlsl"
-#include "Assets/Res/Shader/Includes/CustomTerrainVTBlend.hlsl"
+#include "Assets/Res/Shader/Includes/AVTUtilities.hlsl"
 #include "Assets/Res/Shader/Includes/HeightLerp.hlsl"
 
 void BlendTerrainVTWithOutHeight(FPixelInput PixelIn, inout MInputType MInput, float BlendHeight)

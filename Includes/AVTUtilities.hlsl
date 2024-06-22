@@ -1,6 +1,6 @@
 // Author: QP4B
-#ifndef XRENDER_RES_AVT_SAMPLER_HLSL_INCLUDED
-#define XRENDER_RES_AVT_SAMPLER_HLSL_INCLUDED
+#ifndef XRENDER_RES_AVT_UTILITIES_HLSL_INCLUDED
+#define XRENDER_RES_AVT_UTILITIES_HLSL_INCLUDED
 
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonSampler.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonTransform.hlsl"
@@ -100,4 +100,5 @@ void GetTerrainData(float3 PositionWS, float2 Offset, float2 NodeUV, float QuadI
     TData.TerrainPositionWS = float3(PositionWS.x, TerrainHeightWS, PositionWS.z);
     GetTerrainNormalWS(NodeUV, QuadIndex, GetTerrainNormalTS(Normal), TData);
 }
+
 #endif
