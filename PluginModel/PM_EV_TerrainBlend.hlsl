@@ -20,7 +20,7 @@
 #properties
 _TerrainBlend_UseHeightLerp ("Use Height Lerp", Int) = 0
 _TerrainBlend_BlendHeight ("Blend Height", Range(0, 3)) = 1
-_TerrainBlend_HeightOffset ("Height Offset", Range(0, 1)) = 0.5
+_TerrainBlend_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TerrainBlend_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 
 #endproperties

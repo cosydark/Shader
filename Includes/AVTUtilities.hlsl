@@ -13,7 +13,7 @@ struct TerrainData
     float TerrainAmbientOcclusion;
     float TerrainHeight;// HeightMap
     float TerrainRoughness;
-    float3 TerrainPositionWS;
+    float3 TerrainPositionWS;// Terrain Height
     float3 TerrainNormalWS;
     float3 TerrainTangentWS;
     float3 TerrainBinormalWS;

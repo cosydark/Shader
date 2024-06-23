@@ -70,8 +70,8 @@
 - _TilingLayer_G_MaskContrast
 - _TilingLayer_G_MaskIntensity
 ### Blend Setting
-- _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_CustomOption1 <= 0)
-- _TilingLayer_G_BlendRadius @Hide(_CustomOption1 <= 0)
+- _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min)
+- _TilingLayer_G_BlendRadius
 
 # Additional Layer (B) @Hide(_UseAdditionalLayer == 0)
 - _AdditionalLayer_BaseColor
