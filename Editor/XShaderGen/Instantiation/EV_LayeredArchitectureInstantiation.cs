@@ -52,6 +52,10 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
             config.SetOptionTransparentZWrite(ShaderOptionFlag.AlwaysDisable);
             config.SetOptionRefraction(ShaderOptionFlag.AlwaysDisable);
             config.SetSupportDotsInstancing(true);
+            
+            config.SetSupportPassForwardShading(false);
+            config.SetSupportPassDistortion(false);
+            config.SetSupportPassMotionVectors(false);
         }
     }
 }

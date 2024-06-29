@@ -20,7 +20,7 @@
 #properties
 _TerrainBlend_UseHeightLerp ("Use Height Lerp", Int) = 0
 _TerrainBlend_BlendHeight ("Blend Height", Range(0, 3)) = 1
-_TerrainBlend_HeightOffset ("Height Offset", Range(-1, 1)) = 0
+_TerrainBlend_HeightOffset ("Height Offset", Range(0, 1)) = 0.5
 _TerrainBlend_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 
 #endproperties
@@ -43,7 +43,6 @@ void BlendTerrainVTWithOutHeight(FPixelInput PixelIn, inout MInputType MInput, f
     {
         float BlendAlpha = saturate(1.0 - (PixelIn.PositionWS.y - TerrainHeight) / BlendHeight);
         BlendAlpha = smoothstep(0, 1, BlendAlpha);
-        
         ZERO_INITIALIZE(TerrainData, Data);
         GetTerrainData(PixelIn.PositionWS, -PixelIn.GeometricNormalWS.xz, NodeUV, QuadIndex, Data);
         MInput.Base.Color = lerp(MInput.Base.Color, Data.TerrainColor, BlendAlpha);
@@ -51,6 +50,7 @@ void BlendTerrainVTWithOutHeight(FPixelInput PixelIn, inout MInputType MInput, f
         MInput.Base.Roughness = lerp(MInput.Base.Roughness, Data.TerrainRoughness, BlendAlpha);
         MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, Data.TerrainAmbientOcclusion, BlendAlpha);
         MInput.Detail.Height = lerp(MInput.Detail.Height, Data.TerrainHeight, BlendAlpha);
+        MInput.Specular.Reflectance = lerp(MInput.Specular.Reflectance, 0.5, BlendAlpha);
         MInput.Geometry.NormalWS = normalize(lerp(MInput.Geometry.NormalWS, Data.TerrainNormalWS, BlendAlpha));
         MInput.Geometry.BinormalWS = normalize(lerp(MInput.Geometry.BinormalWS, Data.TerrainBinormalWS, BlendAlpha));
         MInput.Geometry.TangentWS = normalize(lerp(MInput.Geometry.TangentWS, Data.TerrainTangentWS, BlendAlpha));
@@ -78,6 +78,7 @@ void BlendTerrainVTWithHeight(FPixelInput PixelIn, inout MInputType MInput, floa
         MInput.Base.Roughness = lerp(MInput.Base.Roughness, Data.TerrainRoughness, HeightBlendMask);
         MInput.AO.AmbientOcclusion = lerp(MInput.AO.AmbientOcclusion, Data.TerrainAmbientOcclusion, HeightBlendMask);
         MInput.Detail.Height = lerp(MInput.Detail.Height, Data.TerrainHeight, HeightBlendMask);
+        MInput.Specular.Reflectance = lerp(MInput.Specular.Reflectance, 0.5, BlendAlpha);
         MInput.Geometry.NormalWS = normalize(lerp(MInput.Geometry.NormalWS, Data.TerrainNormalWS, HeightBlendMask));
         MInput.Geometry.BinormalWS = normalize(lerp(MInput.Geometry.BinormalWS, Data.TerrainBinormalWS, HeightBlendMask));
         MInput.Geometry.TangentWS = normalize(lerp(MInput.Geometry.TangentWS, Data.TerrainTangentWS, HeightBlendMask));

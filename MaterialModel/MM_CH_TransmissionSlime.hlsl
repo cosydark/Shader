@@ -20,6 +20,7 @@
 - _MaskMap @TryInline(0)
 - _EmissiveMap @TryInline(1)
 - _EmissiveColor
+- _Luminance
 - _Metallic
 - _Occlusion
 - _Roughness
@@ -53,6 +54,7 @@
 - _FlowSpeed
 - _FlowNoiseTiling
 - _EmissiveFlowColor
+- _FlowLuminance
 
 # Refraction @Hide(_Refraction == 0)
 - _IORMap @TryInline(1)
@@ -74,7 +76,8 @@ _DetailNormalScale ("Detail Normal Scale", Range(0, 2)) = 1
 _DetailNormalTiling ("Detail Normal Tiling", Float) = 1
 _MaskMap ("MaskMap (MOHR)", 2D) = "linearGrey" {}
 _EmissiveMap ("Emissive Map", 2D) = "white" {}
-[HDR] _EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
+_EmissiveColor ("Emissive Color", Color) = (0, 0, 0, 1)
+_Luminance ("Luminance", Float) = 1
 _Metallic ("Metallic", Range(0, 1)) = 0
 _Occlusion ("Occlusion", Range(0, 1)) = 1
 _Roughness ("Roughness", Range(0, 1)) = 1
@@ -107,7 +110,8 @@ _FlowMatcap ("Flow Matcap", 2D) = "white" {}
 _FlowIntensity ("Flow Intensity", Range(0, 3)) = 1
 _FlowSpeed ("Flow Speed", Range(0, 0.2)) = 0.1
 _FlowNoiseTiling ("Flow NoiseTiling", Range(1, 5)) = 1
-[HDR] _EmissiveFlowColor ("Emissive Flow Color", Color) = (1, 1, 1, 1)
+_EmissiveFlowColor ("Emissive Flow Color", Color) = (1, 1, 1, 1)
+_FlowLuminance ("Flow Luminance", Float) = 1
 // Refraction
 _IORMap ("IOR Map", 2D) = "white" {}
 _IORScale ("IOR Map Scale", Range(0, 3)) = 0.1
@@ -254,7 +258,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
     float4 NormalMap = SAMPLE_TEXTURE2D(_NormalMap, SamplerLinearRepeat, BaseMapUV);
     float4 DetailNormalMap = SAMPLE_TEXTURE2D(_DetailNormalMap, SamplerLinearRepeat, BaseMapUV * _DetailNormalTiling);
     MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(GetNormalTSFromNormalTex(NormalMap, _NormalScale), GetNormalTSFromNormalTex(DetailNormalMap, _DetailNormalScale));
-    MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb;
+    MInput.Emission.Color = SAMPLE_TEXTURE2D(_EmissiveMap, SamplerLinearRepeat, BaseMapUV).rgb * _EmissiveColor.rgb * _Luminance;
 	// Flow
 	#if defined(MATERIAL_USE_FLOW)
 	float3 PositionWS = PixelIn.PositionWS * _FlowNoiseTiling + float3(0, _Time.y * _FlowSpeed * 2, _Time.y * _FlowSpeed * -1);
@@ -274,7 +278,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float3 TransmittanceColor;
 	
 	#if defined(MATERIAL_USE_FLOW)
-	MInput.Emission.Color += MatcapColor * _EmissiveFlowColor.rgb;
+	MInput.Emission.Color += MatcapColor * _EmissiveFlowColor.rgb * _FlowLuminance;
 	#else
 	#endif
 	
@@ -288,7 +292,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float2 ThinFilmUV = PixelIn.UV0;
 	MInput.ThinFilm.Thickness = SAMPLE_TEXTURE2D(_ThinFilmThicknessMap, SamplerLinearRepeat, ThinFilmUV).r * _ThinFilmThickness;
 	MInput.ThinFilm.Factor = SAMPLE_TEXTURE2D(_ThinFilmFactorMask, SamplerLinearRepeat, BaseMapUV).r * _ThinFilmFactor;
-	
+	MInput.Emission.Luminance = 1;
     #if defined(USE_VERTEX_ATTR_CUSTOM_OUTPUT_DATA)
     // SSS MFP Scale is a material params, it means color(1, 1, 1) trans through cur mat by this thick will turn to transmittance_color
     // so this place no need multi really object's thickness to SSSMFPScale

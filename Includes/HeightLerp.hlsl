@@ -3,10 +3,20 @@
 #ifndef XRENDER_RES_HEIGHT_LERP_HLSL_INCLUDED
 #define XRENDER_RES_HEIGHT_LERP_HLSL_INCLUDED
 
-// TODO(QP4B) A Better Height Blend Function ?
-float ModifyHeight(float Height, float Offset)
+float ModifyHeight(float Height, float Scale, float Shift)
 {
-    return saturate(Height + Offset * 0.5);
+    Height = Height * 2 - 1;
+    Height *= Scale;
+    Height = saturate(Height * 0.5 + 0.5);
+    Height += Shift;
+    return Height;
+}
+float ModifyHeight(float Height, float Scale)
+{
+    Height = Height * 2 - 1;
+    Height *= Scale;
+    Height = saturate(Height * 0.5 + 0.5);
+    return Height;
 }
 float2 HeightBlend(float WeightA, float HeightA, float WeightB, float HeightB, float Radius)
 {

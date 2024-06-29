@@ -23,6 +23,7 @@
 - _TilingLayer_NormalScale
 - _TilingLayer_MaskMap @TryInline(0)
 - _TilingLayer_Reflectance
+- _TilingLayer_HeightScale
 - _TilingLayer_HeightOffset
 - _TilingLayer_PorosityFactor @Drawer(PorosityFactor)
 ### Tiling Setting
@@ -30,6 +31,9 @@
 - _TilingLayer_Use2U @Drawer(Toggle)
 - _TilingLayer_HexTiling @Drawer(Toggle)
 - _TilingLayer_MatchScaling @Drawer(Toggle)
+### Blend Setting
+- _TilingLayer_BlendHeightScale
+- _TilingLayer_BlendHeightShift
 
 # Tiling Layer (R) @Hide(_CustomEnum < 1 || _CustomEnum == 3)
 - _TilingLayer_R_BaseMap @TryInline(1)
@@ -38,6 +42,7 @@
 - _TilingLayer_R_NormalScale
 - _TilingLayer_R_MaskMap @TryInline(0)
 - _TilingLayer_R_Reflectance
+- _TilingLayer_R_HeightScale
 - _TilingLayer_R_HeightOffset
 - _TilingLayer_R_PorosityFactor @Drawer(PorosityFactor)
 ### Tiling Setting
@@ -50,6 +55,8 @@
 - _TilingLayer_R_MaskIntensity
 ### Blend Setting
 - _TilingLayer_R_BlendMode  @Drawer(Enum, Height Max, Height Min)
+- _TilingLayer_R_BlendHeightScale
+- _TilingLayer_R_BlendHeightShift
 - _TilingLayer_R_BlendRadius
 
 # Tiling Layer (G) @Hide(_CustomEnum != 2)
@@ -59,6 +66,7 @@
 - _TilingLayer_G_NormalScale
 - _TilingLayer_G_MaskMap @TryInline(0)
 - _TilingLayer_G_Reflectance
+- _TilingLayer_G_HeightScale
 - _TilingLayer_G_HeightOffset
 - _TilingLayer_G_PorosityFactor @Drawer(PorosityFactor)
 ### Tiling Setting
@@ -71,21 +79,19 @@
 - _TilingLayer_G_MaskIntensity
 ### Blend Setting
 - _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min)
+- _TilingLayer_G_BlendHeightScale
+- _TilingLayer_G_BlendHeightShift
 - _TilingLayer_G_BlendRadius
 
 # Additional Layer (B) @Hide(_UseAdditionalLayer == 0)
 - _AdditionalLayer_BaseColor
-- _AdditionalLayer_NormalScale
-- _AdditionalLayer_AmbientOcclusion
-- _AdditionalLayer_Height
-- _AdditionalLayer_Roughness
-- _AdditionalLayer_Reflectance
 ### Mask Setting
 - _AdditionalLayer_MaskContrast
 - _AdditionalLayer_MaskIntensity
 ### Blend Setting
 - _AdditionalLayer_UseHeightLerp @Drawer(Toggle)
 - _AdditionalLayer_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_AdditionalLayer_UseHeightLerp == 0)
+- _AdditionalLayer_BlendHeight @Hide(_AdditionalLayer_UseHeightLerp == 0)
 - _AdditionalLayer_BlendRadius @Hide(_AdditionalLayer_UseHeightLerp == 0)
 
 # Detail Layer @Hide(_CustomOption2 == 0)
@@ -106,7 +112,8 @@
 - _ToppingLayer_NormalScale
 - _ToppingLayer_MaskMap @TryInline(0)
 - _ToppingLayer_Reflectance
-- _ToppingLayer_HeightOffset @Hide(_ToppingLayer_UseHeightLerp == 0)
+- _ToppingLayer_HeightScale
+- _ToppingLayer_HeightOffset
 - _ToppingLayer_PorosityFactor @Drawer(PorosityFactor)
 ### Topping Setting
 - _ToppingLayer_NormalIntensity @Hide(_CustomOption1 == 0)
@@ -118,9 +125,10 @@
 - _ToppingLayer_HexTiling @Drawer(Toggle)
 - _ToppingLayer_MatchScaling @Drawer(Toggle)
 ### Blend Setting
-- _ToppingLayer_UseHeightLerp @Drawer(Toggle)
-- _ToppingLayer_BlendMode @Drawer(Enum, Height Max, Height Min) @Hide(_ToppingLayer_UseHeightLerp == 0)
-- _ToppingLayer_BlendRadius @Hide(_ToppingLayer_UseHeightLerp == 0)
+- _ToppingLayer_BlendMode @Drawer(Enum, Height Max, Height Min)
+- _ToppingLayer_BlendHeightScale
+- _ToppingLayer_BlendHeightShift
+- _ToppingLayer_BlendRadius
 
 #endstylesheet
 
@@ -140,12 +148,15 @@ _TilingLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _TilingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _TilingLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _TilingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+_TilingLayer_HeightScale ("Height Scale", Range(0, 1)) = 1
 _TilingLayer_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_PorosityFactor ("Porosity Factor", Vector) = (0, 0, 0, 1)
 _TilingLayer_Tiling ("Tiling", Float) = 1
-_TilingLayer_Use2U ("Use 2U", Int) = 1
+_TilingLayer_Use2U ("Use 2U", Int) = 0
 _TilingLayer_HexTiling ("Hex Tiling", Int) = 0
-_TilingLayer_MatchScaling ("Match Scaling", Int) = 0
+_TilingLayer_MatchScaling ("Match Scaling", Int) = 1
+_TilingLayer_BlendHeightScale ("Blend Height Scale", Range(0, 1)) = 0.3333
+_TilingLayer_BlendHeightShift ("Blend Height Shift", Range(-0.5, 0.5)) = -0.1666
 // Tiling Layer R
 _TilingLayer_R_BaseMap ("Base Map", 2D) = "white" {}
 _TilingLayer_R_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
@@ -153,16 +164,19 @@ _TilingLayer_R_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _TilingLayer_R_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _TilingLayer_R_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _TilingLayer_R_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+_TilingLayer_R_HeightScale ("Height Scale", Range(0, 1)) = 1
 _TilingLayer_R_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_R_PorosityFactor ("Porosity Factor", Vector) = (0, 0, 0, 1)
 _TilingLayer_R_Tiling ("Tiling", Float) = 1
-_TilingLayer_R_Use2U ("Use 2U", Int) = 1
+_TilingLayer_R_Use2U ("Use 2U", Int) = 0
 _TilingLayer_R_HexTiling ("Hex Tiling", Int) = 0
-_TilingLayer_R_MatchScaling ("Match Scaling", Int) = 0
-_TilingLayer_R_BlendMode ("Blend Mode", Float) = 1
+_TilingLayer_R_MatchScaling ("Match Scaling", Int) = 1
+_TilingLayer_R_BlendMode ("Blend Mode", Float) = 0
 _TilingLayer_R_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _TilingLayer_R_MaskContrast ("Mask Contrast R", Float) = 1
 _TilingLayer_R_MaskIntensity ("Mask Intensity R", Float) = 1
+_TilingLayer_R_BlendHeightScale ("Blend Height Scale", Range(0, 1)) = 0.3333
+_TilingLayer_R_BlendHeightShift ("Blend Height Shift", Range(-0.5, 0.5)) = 0
 // Tiling Layer G
 _TilingLayer_G_BaseMap ("Base Map", 2D) = "white" {}
 _TilingLayer_G_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
@@ -170,33 +184,33 @@ _TilingLayer_G_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _TilingLayer_G_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _TilingLayer_G_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _TilingLayer_G_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+_TilingLayer_G_HeightScale ("Height Scale", Range(0, 1)) = 1
 _TilingLayer_G_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _TilingLayer_G_PorosityFactor ("Porosity Factor", Vector) = (0, 0, 0, 1)
 _TilingLayer_G_Tiling ("Tiling", Float) = 1
-_TilingLayer_G_Use2U ("Use 2U", Int) = 1
+_TilingLayer_G_Use2U ("Use 2U", Int) = 0
 _TilingLayer_G_HexTiling ("Hex Tiling", Int) = 0
-_TilingLayer_G_MatchScaling ("Match Scaling", Int) = 0
-_TilingLayer_G_BlendMode ("Blend Mode", Float) = 1
+_TilingLayer_G_MatchScaling ("Match Scaling", Int) = 1
+_TilingLayer_G_BlendMode ("Blend Mode", Float) = 0
 _TilingLayer_G_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _TilingLayer_G_MaskContrast ("Mask Contrast R", Float) = 1
 _TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
+_TilingLayer_G_BlendHeightScale ("Blend Height Scale", Range(0, 1)) = 0.3333
+_TilingLayer_G_BlendHeightShift ("Blend Height Shift", Range(-0.5, 0.5)) = 0.1666
 // Additional Layer B
 [HDR] _AdditionalLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
-_AdditionalLayer_NormalScale ("Normal Scale", Range(0, 1)) = 0.5
-_AdditionalLayer_Height ("Height", Range(0, 1)) = 0.5
-_AdditionalLayer_Roughness ("Roughness", Range(0, 1)) = 0.5
-_AdditionalLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
 _AdditionalLayer_UseHeightLerp ("Use Height Lerp", Int) = 0
-_AdditionalLayer_BlendMode ("Blend Mode", Float) = 1
+_AdditionalLayer_BlendMode ("Blend Mode", Float) = 0
 _AdditionalLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
 _AdditionalLayer_MaskContrast ("Mask Contrast R", Float) = 1
 _AdditionalLayer_MaskIntensity ("Mask Intensity R", Float) = 1
+_AdditionalLayer_BlendHeight ("Blend Height", Range(0, 1)) = 0.5
 // Detail Layer
 _Detail_BaseMap ("Base Map", 2D) = "white" {}
 [Normal] _Detail_NormalMap ("Normal Map", 2D) = "bump" {}
 _Detail_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _Detail_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
-_Detail_AmbientOcclusion ("AmbientOcclusion", Range(0, 1)) = 1
+_Detail_AmbientOcclusion ("Ambient Occlusion", Range(0, 1)) = 1
 _Detail_AlbedoGrayValue ("Albedo GrayValue", Range(0, 1)) = 1
 _Detail_Tiling ("Tiling", Float) = 1
 _Detail_MatchScaling ("Match Scaling", Int) = 0
@@ -207,6 +221,7 @@ _ToppingLayer_BaseColor ("Base Color", Color) = (1, 1, 1, 1)
 _ToppingLayer_NormalScale ("Normal Scale", Range(0, 2)) = 1
 _ToppingLayer_MaskMap ("Mask Map (MOHR)", 2D) = "linearGrey" {}
 _ToppingLayer_Reflectance ("Reflectance", Range(0, 1)) = 0.5
+_ToppingLayer_HeightScale ("Height Scale", Range(0, 1)) = 1
 _ToppingLayer_HeightOffset ("Height Offset", Range(-1, 1)) = 0
 _ToppingLayer_PorosityFactor ("Porosity Factor", Vector) = (0, 0, 0, 1)
 _ToppingLayer_NormalIntensity ("Normal Intensity", Range(0, 1)) = 0.5
@@ -216,9 +231,10 @@ _ToppingLayer_Tiling ("Tiling", Float) = 1
 _ToppingLayer_Use2U ("Use 2U", Int) = 1
 _ToppingLayer_HexTiling ("Hex Tiling", Int) = 0
 _ToppingLayer_MatchScaling ("Match Scaling", Int) = 0
-_ToppingLayer_UseHeightLerp ("Use Height Lerp", Int) = 1
-_ToppingLayer_BlendMode ("Blend Mode", Float) = 1
+_ToppingLayer_BlendMode ("Blend Mode", Float) = 0
 _ToppingLayer_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
+_ToppingLayer_BlendHeightScale ("Blend Height Scale", Range(0, 1)) = 0.3333
+_ToppingLayer_BlendHeightShift ("Blend Height Shift", Range(-0.5, 0.5)) = 0.1666
 
 #endproperties
 
@@ -268,6 +284,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	SetupMInput(MInput);
 	// Tiling Layer
 	float2 TilingLayer_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_Use2U) * _TilingLayer_Tiling * lerp(1, LocalScaleX, _TilingLayer_MatchScaling);
+	CustomMInput CMInput;
 	MaterialLayer MLayer;
 	SetupMaterialLayer(	_TilingLayer_BaseMap,
 						_TilingLayer_BaseColor,
@@ -275,19 +292,20 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_TilingLayer_NormalScale,
 						_TilingLayer_MaskMap,
 						_TilingLayer_Reflectance,
-						_TilingLayer_HeightOffset,
+						float2(_TilingLayer_HeightScale, _TilingLayer_HeightOffset),
+						float2(_TilingLayer_BlendHeightScale, _TilingLayer_BlendHeightShift),
 						MLayer
 						);
 	if(_TilingLayer_HexTiling > FLT_EPS)
 	{
-		InitializeTilingLayer_Hex(MLayer, TilingLayer_Coordinate, MInput);
+		InitializeTilingLayer_Hex(MLayer, TilingLayer_Coordinate, CMInput);
 	}
 	else
 	{
-		InitializeTilingLayer(MLayer, TilingLayer_Coordinate, MInput);
+		InitializeTilingLayer(MLayer, TilingLayer_Coordinate, CMInput);
 	}
 	// Tiling Layer R
-#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR_WITHTOPPING)
+	#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR_WITHTOPPING)
 	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
 	float2 TilingLayer_R_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_R_Use2U) * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
 	MaterialLayer MLayer_R;
@@ -297,20 +315,21 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_TilingLayer_R_NormalScale,
 						_TilingLayer_R_MaskMap,
 						_TilingLayer_R_Reflectance,
-						_TilingLayer_R_HeightOffset,
+						float2(_TilingLayer_R_HeightScale, _TilingLayer_R_HeightOffset),
+						float2(_TilingLayer_R_BlendHeightScale, _TilingLayer_R_BlendHeightShift),
 						MLayer_R
 						);
 	if(_TilingLayer_R_HexTiling > FLT_EPS)
 	{
-		BlendWithHeight_Hex(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, _TilingLayer_R_BlendRadius, _TilingLayer_R_BlendMode, MInput);
+		BlendWithHeight_Hex(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, _TilingLayer_R_BlendRadius, _TilingLayer_R_BlendMode, CMInput);
 	}
 	else
 	{
-		BlendWithHeight(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, _TilingLayer_R_BlendRadius, _TilingLayer_R_BlendMode, MInput);
+		BlendWithHeight(MLayer_R, TilingLayer_R_Coordinate, BlendMask.r, _TilingLayer_R_BlendRadius, _TilingLayer_R_BlendMode, CMInput);
 	}
-#endif
+	#endif
 	// Tiling Layer G
-#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
+	#if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
 	BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
 	float2 TilingLayer_G_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_G_Use2U) * _TilingLayer_G_Tiling * lerp(1, LocalScaleX, _TilingLayer_G_MatchScaling);
 	MaterialLayer MLayer_G;
@@ -320,18 +339,19 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_TilingLayer_G_NormalScale,
 						_TilingLayer_G_MaskMap,
 						_TilingLayer_G_Reflectance,
-						_TilingLayer_G_HeightOffset,
+						float2(_TilingLayer_G_HeightScale, _TilingLayer_G_HeightOffset),
+						float2(_TilingLayer_G_BlendHeightScale, _TilingLayer_G_BlendHeightShift),
 						MLayer_G
 						);
 	if(_TilingLayer_G_HexTiling > FLT_EPS)
 	{
-		BlendWithHeight_Hex(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, MInput);
+		BlendWithHeight_Hex(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, CMInput);
 	}
 	else
 	{
-		BlendWithHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, MInput);
+		BlendWithHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, CMInput);
 	}
-#endif
+	#endif
 	// Additional Layer B
 	BRANCH
 	if(_UseAdditionalLayer > FLT_EPS)
@@ -339,18 +359,16 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 		BlendMask.b = saturate(pow(BlendMask.b, _AdditionalLayer_MaskContrast) * _AdditionalLayer_MaskIntensity);
 		SimpleMaterialLayer SMLayer_B;
 		SetupSMaterialLayer(	_AdditionalLayer_BaseColor,
-								_AdditionalLayer_NormalScale,
-								float4(0, 1, _AdditionalLayer_Height * 2, _AdditionalLayer_Roughness),
-								_AdditionalLayer_Reflectance,
+								_AdditionalLayer_BlendHeight,
 								SMLayer_B
 							);
 		if(_AdditionalLayer_UseHeightLerp > FLT_EPS)
 		{
-			BlendWithHeightNoTexture(SMLayer_B, BlendMask.b, _AdditionalLayer_BlendRadius, _AdditionalLayer_BlendMode, MInput);
+			BlendWithHeightNoTexture(SMLayer_B, BlendMask.b, _AdditionalLayer_BlendRadius, _AdditionalLayer_BlendMode, CMInput);
 		}
 		else
 		{
-			BlendWithOutHeightNoTexture(SMLayer_B, BlendMask.b, MInput);
+			BlendWithOutHeightNoTexture(SMLayer_B, BlendMask.b, CMInput);
 		}
 	}
 	// Detail Layer
@@ -365,7 +383,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 					  _Detail_AlbedoGrayValue,
 					  DLayer
 					);
-	BlendDetailLayer(DLayer, DetailCoordinate, MInput);
+	BlendDetailLayer(DLayer, DetailCoordinate, CMInput);
 #endif
 	// Base Layer
 #if defined(MATERIAL_USE_USEBASELAYER)
@@ -375,7 +393,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	float3 NormalTS = GetNormalTSFromNormalTex(NormalMap, _BaseLayer_NormalScale);
 #endif
 	// Topping Layer
-#if defined(MATERIAL_ENUM_LAYERCOUNT_TILING_WITHTOPPING) || defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR_WITHTOPPING)
+#if defined(MATERIAL_ENUM_LAYERCOUNT_TILING_WITHTOPPING) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR_WITHTOPPING)
 	float2 ToppingCoordinates = lerp(PixelIn.UV0, PixelIn.UV1, _ToppingLayer_Use2U) * _ToppingLayer_Tiling * lerp(1, LocalScaleX, _ToppingLayer_MatchScaling);
 	float3 NormalWS;
 #if defined(MATERIAL_USE_USEBASELAYER)
@@ -395,36 +413,29 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 						_ToppingLayer_NormalScale,
 						_ToppingLayer_MaskMap,
 						_ToppingLayer_Reflectance,
-						_ToppingLayer_HeightOffset,
+						float2(_ToppingLayer_HeightScale, _ToppingLayer_HeightOffset),
+						float2(_ToppingLayer_BlendHeightScale, _ToppingLayer_BlendHeightShift),
 						MLayer_Detail
 						);
 	BRANCH
 	if(_ToppingLayer_HexTiling > FLT_EPS)
 	{
-		BRANCH
-		if(_ToppingLayer_UseHeightLerp > FLT_EPS)
-		{
-			BlendWithHeight_Hex(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
-		}
-		else
-		{
-			BlendWithOutHeight_Hex(MLayer_Detail, ToppingCoordinates, Coverage, MInput);
-		}
+		BlendWithHeight_Hex(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, CMInput);
 	}
 	else
 	{
-		BRANCH
-		if(_ToppingLayer_UseHeightLerp > FLT_EPS)
-		{
-			BlendWithHeight(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, MInput);
-		}
-		else
-		{
-			BlendWithOutHeight(MLayer_Detail, ToppingCoordinates, Coverage, MInput);
-		}
+		BlendWithHeight(MLayer_Detail, ToppingCoordinates, Coverage, _ToppingLayer_BlendRadius, _ToppingLayer_BlendMode, CMInput);
 	}
 #endif
-	
+	// CMInput -> MInput
+	MInput.Base.Color = CMInput.Color;
+	MInput.TangentSpaceNormal.NormalTS = CMInput.NormalTS;
+	MInput.Specular.Reflectance = CMInput.Reflectance;
+	MInput.Base.Metallic = CMInput.Metallic;
+	MInput.AO.AmbientOcclusion = CMInput.AmbientOcclusion;
+	MInput.Detail.Height = CMInput.MaterialHeight;
+	MInput.Base.Roughness = CMInput.Roughness;
+	// Base Layer
 #if defined(MATERIAL_USE_USEBASELAYER)
 	MInput.TangentSpaceNormal.NormalTS = BlendAngelCorrectedNormals(NormalTS, MInput.TangentSpaceNormal.NormalTS);
 	MInput.AO.AmbientOcclusion *= GetMaterialAOFromMaskMap(MaskMap);
