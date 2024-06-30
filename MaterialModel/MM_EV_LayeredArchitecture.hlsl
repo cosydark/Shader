@@ -261,7 +261,6 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 		BlendWithHeight(MLayer_G, TilingLayer_G_Coordinate, BlendMask.g, _TilingLayer_G_BlendRadius, _TilingLayer_G_BlendMode, CMInput);
 	}
 #endif
-
 	// CMInput -> MInput
 	MInput.Base.Color = CMInput.Color;
 	MInput.TangentSpaceNormal.NormalTS = CMInput.NormalTS;
