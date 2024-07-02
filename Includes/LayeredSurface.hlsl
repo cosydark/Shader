@@ -7,6 +7,7 @@
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonMaterial.hlsl"
 #include "Packages/com.funplus.xrender/Shaders/Library/CommonAntiTilling.hlsl"
 #include "Assets/Res/Shader/Includes/HeightLerp.hlsl"
+#include "Assets/Res/Shader/Includes/TexelDensityDebug.hlsl"
 
 struct MaterialLayer
 {
@@ -58,11 +59,13 @@ float3 BlendAngelCorrectedNormals(float3 BaseNormal, float3 AdditionalNormal)
 
 void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float BlendMode, inout CustomMInput CMInput )
 {
-    float4 BaseMapBlend = SAMPLE_TEXTURE2D(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
+    float3 BaseMapBlend = SAMPLE_TEXTURE2D(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
     float4 NormalMapBlend = SAMPLE_TEXTURE2D(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
     float4 MaskMapBlend = SAMPLE_TEXTURE2D(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
-    
+    // Debug
+    ApplyTexelDensityDebug(BaseMapBlend, MLayer.BaseMap, Coordinate);// Debug Shader Feature Inside
+
     float ModifiedHeight = saturate(ModifyHeight(MaskMapBlend.z, MLayer.BlendHeightScaleAndShift.x, MLayer.BlendHeightScaleAndShift.y));
     float HeightBlendMask = ComputeHeightBlendMask(ModifiedHeight, CMInput.HeightForBlending, IntensityMask, BlendRadius, BlendMode);
     MaskMapBlend.z = ModifyHeight(MaskMapBlend.z, MLayer.HeightScaleAndShift.x, MLayer.HeightScaleAndShift.y);
@@ -79,11 +82,13 @@ void BlendWithHeight(MaterialLayer MLayer, float2 Coordinate, float IntensityMas
 }
 void BlendWithHeight_Hex(MaterialLayer MLayer, float2 Coordinate, float IntensityMask, float BlendRadius, float BlendMode, inout CustomMInput CMInput )
 {
-    float4 BaseMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
+    float3 BaseMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.BaseMap, SamplerTriLinearRepeat, Coordinate) * MLayer.BaseColor;
     float4 NormalMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.NormalMap, SamplerLinearRepeat, Coordinate);
     float3 NormalBlend = GetNormalTSFromNormalTex(NormalMapBlend, MLayer.NormalScale);
     float4 MaskMapBlend = SAMPLE_TEXTURE2D_HEX(MLayer.MaskMap, SamplerLinearRepeat, Coordinate);
-
+    // Debug
+    ApplyTexelDensityDebug(BaseMapBlend, MLayer.BaseMap, Coordinate);// Debug Shader Feature Inside
+    
     float ModifiedHeight = saturate(ModifyHeight(MaskMapBlend.z, MLayer.BlendHeightScaleAndShift.x, MLayer.BlendHeightScaleAndShift.y));
     float HeightBlendMask = ComputeHeightBlendMask(ModifiedHeight, CMInput.HeightForBlending, IntensityMask, BlendRadius, BlendMode);
     MaskMapBlend.z = ModifyHeight(MaskMapBlend.z, MLayer.HeightScaleAndShift.x, MLayer.HeightScaleAndShift.y);
@@ -99,7 +104,7 @@ void BlendWithHeight_Hex(MaterialLayer MLayer, float2 Coordinate, float Intensit
 }
 void BlendWithHeightNoTexture(SimpleMaterialLayer SMLayer, float IntensityMask, float BlendRadius, float BlendMode, inout CustomMInput CMInput)
 {
-    float4 BaseColorBlend = SMLayer.BaseColor;
+    float3 BaseColorBlend = SMLayer.BaseColor;
     
     float2 Weights = lerp(float2(IntensityMask, 1), float2(1, IntensityMask), BlendMode);
     float2 BlendResult = HeightBlend(Weights.x, SMLayer.BlendHeight, Weights.y, CMInput.HeightForBlending, BlendRadius);
@@ -144,6 +149,8 @@ void InitializeTilingLayer(MaterialLayer MLayer, float2 Coordinate, inout Custom
     CMInput.MaterialHeight = GetHeightFromMaskMap(Mask);
     CMInput.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
     CMInput.Reflectance = MLayer.Reflectance;
+    // Debug
+    ApplyTexelDensityDebug(CMInput.Color, MLayer.BaseMap, Coordinate);// Debug Shader Feature Inside
 }
 void InitializeTilingLayer_Hex(MaterialLayer MLayer, float2 Coordinate, inout CustomMInput CMInput)
 {
@@ -161,6 +168,8 @@ void InitializeTilingLayer_Hex(MaterialLayer MLayer, float2 Coordinate, inout Cu
     CMInput.MaterialHeight = GetHeightFromMaskMap(Mask);
     CMInput.Roughness = GetPerceptualRoughnessFromMaskMap(Mask);
     CMInput.Reflectance = MLayer.Reflectance;
+    // Debug
+    ApplyTexelDensityDebug(CMInput.Color, MLayer.BaseMap, Coordinate);// Debug Shader Feature Inside
 }
 void SetupMaterialLayer(    Texture2D<float4> BaseMap,
                             float4 BaseColor,

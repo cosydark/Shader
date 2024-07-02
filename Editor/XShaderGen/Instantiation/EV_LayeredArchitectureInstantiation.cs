@@ -39,7 +39,7 @@ namespace UnityEditor.XRender.XShaderGen.Instantiation
         protected override string GetShadingModelName() => "SHADING_MODEL_STANDARD_PBR";
         protected override List<PluginModelDesc> InitPluginModelDescs() => new()
         {
-            new PluginModelDesc { name = "TerrainBlend", needMultiCompile = false},
+            // new PluginModelDesc { name = "TerrainBlend", needMultiCompile = false},
         };
         protected override void AdditionalConfig(SurfaceShaderConfig config)
         {

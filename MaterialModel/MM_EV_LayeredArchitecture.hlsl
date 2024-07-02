@@ -6,8 +6,8 @@
 
 #stylesheet
 
-# Material Setting (1U) @Hide(_CustomOption0 != 0)
-- _BlendMask @TryInline(0)
+# Material Setting
+- _BlendMask @Hide(_CustomOption0 != 0)
 
 # Base Layer @Hide(_CustomOption2 == 0)
 - _BaseLayer_BaseMap @TryInline(0)
@@ -50,8 +50,7 @@
 - _TilingLayer_R_HexTiling @Drawer(Toggle)
 - _TilingLayer_R_MatchScaling @Drawer(Toggle)
 ### Mask Setting
-- _TilingLayer_R_MaskContrast
-- _TilingLayer_R_MaskIntensity
+- _TilingLayer_R_MaskContrastAndIntensity @Drawer(VectorInline, 2)
 ### Blend Setting
 - _TilingLayer_R_BlendMode  @Drawer(Enum, Height Max, Height Min)
 - _TilingLayer_R_BlendHeightScale
@@ -74,8 +73,7 @@
 - _TilingLayer_G_HexTiling @Drawer(Toggle)
 - _TilingLayer_G_MatchScaling @Drawer(Toggle)
 ### Mask Setting
-- _TilingLayer_G_MaskContrast
-- _TilingLayer_G_MaskIntensity
+- _TilingLayer_G_MaskContrastAndIntensity @Drawer(VectorInline, 2)
 ### Blend Setting
 - _TilingLayer_G_BlendMode @Drawer(Enum, Height Max, Height Min)
 - _TilingLayer_G_BlendHeightScale
@@ -85,7 +83,7 @@
 
 
 #properties
-_BlendMask ("Blend Mask", 2D) = "black" {}
+[NoScaleOffset] _BlendMask ("Blend Mask", 2D) = "black" {}
 // Base Layer
 _BaseLayer_BaseMap ("Base Map", 2D) = "linearGrey" {}
 [Normal] _BaseLayer_NormalMap ("Normal Map", 2D) = "bump" {}
@@ -123,8 +121,7 @@ _TilingLayer_R_HexTiling ("Hex Tiling", Int) = 0
 _TilingLayer_R_MatchScaling ("Match Scaling", Int) = 1
 _TilingLayer_R_BlendMode ("Blend Mode", Float) = 0
 _TilingLayer_R_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
-_TilingLayer_R_MaskContrast ("Mask Contrast R", Float) = 1
-_TilingLayer_R_MaskIntensity ("Mask Intensity R", Float) = 1
+_TilingLayer_R_MaskContrastAndIntensity ("Contrast Intensity", Vector) = (1, 1, 0, 0)
 _TilingLayer_R_BlendHeightScale ("Blend Height Scale", Range(0, 1)) = 1
 _TilingLayer_R_BlendHeightShift ("Blend Height Shift", Range(-0.5, 0.5)) = 0
 // Tiling Layer G
@@ -143,8 +140,7 @@ _TilingLayer_G_HexTiling ("Hex Tiling", Int) = 0
 _TilingLayer_G_MatchScaling ("Match Scaling", Int) = 1
 _TilingLayer_G_BlendMode ("Blend Mode", Float) = 0
 _TilingLayer_G_BlendRadius ("Blend Radius", Range(0.001, 0.5)) = 0.1
-_TilingLayer_G_MaskContrast ("Mask Contrast R", Float) = 1
-_TilingLayer_G_MaskIntensity ("Mask Intensity R", Float) = 1
+_TilingLayer_G_MaskContrastAndIntensity ("Contrast Intensity", Vector) = (1, 1, 0, 0)
 _TilingLayer_G_BlendHeightScale ("Blend Height Scale", Range(0, 1)) = 0.3333
 _TilingLayer_G_BlendHeightShift ("Blend Height Shift", Range(-0.5, 0.5)) = 0.1666
 
@@ -215,7 +211,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 	}
 	// Tiling Layer R
 #if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGR) | defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
-	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrast) * _TilingLayer_R_MaskIntensity);
+	BlendMask.r = saturate(pow(BlendMask.r, _TilingLayer_R_MaskContrastAndIntensity.x) * _TilingLayer_R_MaskContrastAndIntensity.y);
 	float2 TilingLayer_R_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_R_Use2U) * _TilingLayer_R_Tiling * lerp(1, LocalScaleX, _TilingLayer_R_MatchScaling);
 	MaterialLayer MLayer_R;
 	SetupMaterialLayer(	_TilingLayer_R_BaseMap,
@@ -239,7 +235,7 @@ void PrepareMaterialInput_New(FPixelInput PixelIn, FSurfacePositionData PosData,
 #endif
 	// Tiling Layer G
 #if defined(MATERIAL_ENUM_LAYERCOUNT_TILINGRG)
-	BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrast) * _TilingLayer_G_MaskIntensity);
+	BlendMask.g = saturate(pow(BlendMask.g, _TilingLayer_G_MaskContrastAndIntensity.x) * _TilingLayer_G_MaskContrastAndIntensity.y);
 	float2 TilingLayer_G_Coordinate = lerp(PixelIn.UV0, PixelIn.UV1, _TilingLayer_G_Use2U) * _TilingLayer_G_Tiling * lerp(1, LocalScaleX, _TilingLayer_G_MatchScaling);
 	MaterialLayer MLayer_G;
 	SetupMaterialLayer(	_TilingLayer_G_BaseMap,
